@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+        .user-card { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; }
+        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn:hover { background: #0056b3; }
+        .header { text-align: center; margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏋️ Peso</h1>
+        <p>Weight Tracking per Giada ed Emilio</p>
+    </div>
+    
+    <div class="user-grid">
+        {{range .Users}}
+        <div class="user-card">
+            <h3>{{if eq . "giada"}}👩‍💼{{else}}👨‍💼{{end}} {{. | title}}</h3>
+            <p>Benvenuto/a nel tuo dashboard personale</p>
+            <a href="/users/{{.}}" class="btn">Apri Dashboard</a>
+        </div>
+        {{end}}
+    </div>
+</body>
+</html>

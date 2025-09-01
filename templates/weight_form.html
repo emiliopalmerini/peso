@@ -1,0 +1,28 @@
+<div style="margin-top: 20px; padding: 20px; background: #e9ecef; border-radius: 8px;">
+    <h3>Registra Nuovo Peso</h3>
+    <form hx-post="/api/weights" hx-target="#weight-form" hx-swap="innerHTML">
+        <input type="hidden" name="user_id" value="{{.UserID}}">
+        
+        <div style="margin-bottom: 15px;">
+            <label>Peso:</label>
+            <input type="number" name="weight" step="0.1" min="10" max="500" required style="width: 100px; padding: 5px;">
+            <select name="unit" required style="padding: 5px;">
+                <option value="kg">kg</option>
+                <option value="lb">lb</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label>Data:</label>
+            <input type="date" name="date" value="{{.Today}}" required style="padding: 5px;">
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label>Note (opzionali):</label>
+            <input type="text" name="notes" placeholder="es. peso mattutino" style="width: 200px; padding: 5px;">
+        </div>
+        
+        <button type="submit" class="btn">Salva Peso</button>
+        <button type="button" onclick="this.parentElement.parentElement.innerHTML=''" class="btn" style="background: #6c757d;">Annulla</button>
+    </form>
+</div>
