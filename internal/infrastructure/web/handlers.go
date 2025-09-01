@@ -56,7 +56,7 @@ func (h *Handlers) HomeHandler(w http.ResponseWriter, r *http.Request) {
 // AddWeightHandler handles weight recording
 func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeError(h.logger, w, r, http.StatusMethodNotAllowed, "Method not allowed", nil)
 		return
 	}
 	
@@ -69,14 +69,14 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 	
 	// Validate inputs
 	if userIDStr == "" || weightStr == "" || unitStr == "" {
-		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		writeError(h.logger, w, r, http.StatusBadRequest, "Missing required fields", nil)
 		return
 	}
 	
 	// Parse weight value
 	weightFloat, err := strconv.ParseFloat(weightStr, 64)
 	if err != nil {
-		http.Error(w, "Invalid weight value", http.StatusBadRequest)
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid weight value", err)
 		return
 	}
 	
@@ -88,7 +88,7 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
         // Parse provided date in local timezone
         d, err2 := time.ParseInLocation("2006-01-02", dateStr, time.Local)
         if err2 != nil {
-            http.Error(w, "Invalid date format", http.StatusBadRequest)
+            writeError(h.logger, w, r, http.StatusBadRequest, "Invalid date format", err2)
             return
         }
         now := time.Now()
@@ -98,28 +98,28 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 	// Create domain objects
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
 		return
 	}
 	
 	weightValue, err := weight.NewWeightValue(weightFloat)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid weight: %v", err), http.StatusBadRequest)
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid weight", err)
 		return
 	}
 	
-	unit, err := weight.NewWeightUnit(unitStr)
-	if err != nil {
-		http.Error(w, "Invalid unit", http.StatusBadRequest)
-		return
-	}
+    unit, err := weight.NewWeightUnit(unitStr)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid unit", err)
+        return
+    }
 	
 	// Record weight using domain service  
-	recordedWeight, err := h.weightTracker.RecordWeight(userID, weightValue, unit, measuredAt, notes)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to record weight: %v", err), http.StatusBadRequest)
-		return
-	}
+    recordedWeight, err := h.weightTracker.RecordWeight(userID, weightValue, unit, measuredAt, notes)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Failed to record weight", err)
+        return
+    }
 	
 	// Return success response (HTMX will handle this)
 	w.Header().Set("Content-Type", "application/json")
@@ -156,11 +156,11 @@ func (h *Handlers) WeightHistoryHandler(w http.ResponseWriter, r *http.Request) 
 	vars := mux.Vars(r)
 	userIDStr := vars["userID"]
 	
-	userID, err := user.NewUserID(userIDStr)
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
-		return
-	}
+    userID, err := user.NewUserID(userIDStr)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+        return
+    }
 	
 	// Get period from query params (default to last month)
 	period := application.TimePeriodLastMonth
@@ -181,11 +181,11 @@ func (h *Handlers) WeightHistoryHandler(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 	
-	weights, err := h.weightTracker.GetWeightHistory(userID, period)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get weight history: %v", err), http.StatusInternalServerError)
-		return
-	}
+    weights, err := h.weightTracker.GetWeightHistory(userID, period)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusInternalServerError, "Failed to get weight history", err)
+        return
+    }
 	
 	// Convert to JSON-friendly format
     type WeightResponse struct {
@@ -220,13 +220,13 @@ func (h *Handlers) WeightLatestHandler(w http.ResponseWriter, r *http.Request) {
 
     userID, err := user.NewUserID(userIDStr)
     if err != nil {
-        http.Error(w, "Invalid user ID", http.StatusBadRequest)
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
         return
     }
 
     latest, err := h.weightTracker.GetLatestWeight(userID)
     if err != nil {
-        http.Error(w, fmt.Sprintf("Failed to get latest weight: %v", err), http.StatusInternalServerError)
+        writeError(h.logger, w, r, http.StatusInternalServerError, "Failed to get latest weight", err)
         return
     }
 
@@ -257,7 +257,7 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
 	
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
 		return
 	}
 	
@@ -284,7 +284,7 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
     }
 	
 	if err := h.templates.ExecuteTemplate(w, "user_dashboard.html", data); err != nil {
-		http.Error(w, "Template error", http.StatusInternalServerError)
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
 		return
 	}
 }
@@ -390,8 +390,8 @@ func (h *Handlers) AddGoalHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     // HTMX redirect to refresh dashboard with new goal
-    w.Header().Set("HX-Redirect", "/users/"+userIDStr)
-    w.WriteHeader(http.StatusNoContent)
+        w.Header().Set("Content-Type", "text/html; charset=utf-8")
+    _ = h.templates.ExecuteTemplate(w, "partials_success.html", struct{ Message string }{Message: "Obiettivo impostato con successo"})
 }
 // RecentWeightsHandler returns the HTML partial with recent weights list
 func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) {
@@ -400,13 +400,13 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 
     userID, err := user.NewUserID(userIDStr)
     if err != nil {
-        http.Error(w, "Invalid user ID", http.StatusBadRequest)
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
         return
     }
 
     weights, err := h.weightTracker.GetRecentWeights(userID, 10)
     if err != nil {
-        http.Error(w, "Failed to load recent weights", http.StatusInternalServerError)
+        writeError(h.logger, w, r, http.StatusInternalServerError, "Failed to load recent weights", err)
         return
     }
 
@@ -432,7 +432,7 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
     }{Rows: rows}
 
     if err := h.templates.ExecuteTemplate(w, "partials_recent_weights.html", data); err != nil {
-        http.Error(w, "Template error", http.StatusInternalServerError)
+        writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
         return
     }
 }
@@ -451,7 +451,7 @@ func (h *Handlers) WeightFormHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if err := h.templates.ExecuteTemplate(w, "weight_form.html", data); err != nil {
-		http.Error(w, "Template error", http.StatusInternalServerError)
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
 		return
 	}
 }
