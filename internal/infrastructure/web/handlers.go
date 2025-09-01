@@ -1,18 +1,19 @@
 package web
 
 import (
-	"encoding/json"
-	"fmt"
-	"html/template"
-	"net/http"
-	"strconv"
-	"time"
+    "encoding/json"
+    "fmt"
+    "html/template"
+    "net/http"
+    "strconv"
+    "time"
 
-	"peso/internal/application"
-	"peso/internal/domain/user"
-	"peso/internal/domain/weight"
+    "peso/internal/application"
+    "peso/internal/domain/user"
+    "peso/internal/domain/weight"
+    assets "peso"
 
-	"github.com/gorilla/mux"
+    "github.com/gorilla/mux"
 )
 
 // Handlers contains all HTTP handlers
@@ -322,11 +323,11 @@ func loadTemplates() *template.Template {
             return template.JS(string(b))
         },
     })
-	
-	// Load templates from files
-	template.Must(tmpl.ParseGlob("templates/*.html"))
-	
-	return tmpl
+
+    // Load templates from embedded filesystem
+    template.Must(tmpl.ParseFS(assets.FS, "templates/*.html"))
+
+    return tmpl
 }
 
 // Helper function to convert typed slice to interface slice for templates

@@ -98,19 +98,39 @@
                 const data = await res.json();
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
-                const values = averaged.map(p => p.value);
+                const avgValues = averaged.map(p => p.value);
+                const rawPoints = data.map(w => ({ x: w.date, y: w.value }));
 
                 const config = {
                     type: 'line',
                     data: {
                         labels,
-                        datasets: [{
-                            data: values,
-                            borderColor: 'rgb(17, 17, 17)',
-                            backgroundColor: 'rgba(17, 17, 17, 0.05)',
-                            tension: 0.2,
-                            pointRadius: 2
-                        }]
+                        datasets: [
+                            {
+                                type: 'scatter',
+                                label: 'Misurazioni',
+                                data: rawPoints,
+                                parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+                                showLine: false,
+                                pointRadius: 3,
+                                pointHoverRadius: 4,
+                                pointBorderWidth: 0,
+                                pointBackgroundColor: 'rgb(17, 17, 17)'
+                            },
+                            {
+                                type: 'line',
+                                label: 'Media giornaliera',
+                                data: avgValues,
+                                borderColor: 'rgb(17, 17, 17)',
+                                backgroundColor: 'rgba(17, 17, 17, 0.05)',
+                                tension: 0.2,
+                                pointRadius: 5,
+                                pointHoverRadius: 6,
+                                pointBorderWidth: 2,
+                                pointBackgroundColor: '#fff',
+                                pointBorderColor: 'rgb(17, 17, 17)'
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
@@ -125,7 +145,8 @@
 
                 if (chart) {
                     chart.data.labels = labels;
-                    chart.data.datasets[0].data = values;
+                    chart.data.datasets[0].data = rawPoints;
+                    chart.data.datasets[1].data = avgValues;
                     chart.update();
                 } else {
                     chart = new Chart(ctx, config);

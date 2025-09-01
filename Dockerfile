@@ -21,10 +21,9 @@ RUN apk --no-cache add ca-certificates wget
 
 WORKDIR /app
 
-# Copy binary, migrations, and templates from builder
+# Copy binary and migrations from builder (templates/static embedded in binary)
 COPY --from=builder /app/bin/peso .
 COPY --from=builder /app/migrations ./migrations
-COPY --from=builder /app/templates ./templates
 
 # Create volume for database
 RUN mkdir -p /app/data

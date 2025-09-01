@@ -1,16 +1,18 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	"os"
+    "fmt"
+    "log"
+    "net/http"
+    "os"
+    "io/fs"
 
-	"peso/internal/application"
-	"peso/internal/infrastructure/persistence"
-	"peso/internal/infrastructure/web"
+    "peso/internal/application"
+    "peso/internal/infrastructure/persistence"
+    "peso/internal/infrastructure/web"
+    assets "peso"
 
-	"github.com/gorilla/mux"
+    "github.com/gorilla/mux"
 )
 
 // We'll load migrations from the filesystem at runtime for now
@@ -63,8 +65,10 @@ func setupRouter(weightTracker *application.WeightTracker, goalTracker *applicat
     // Initialize web handlers
     handlers := web.NewHandlers(weightTracker, goalTracker)
 
-    // Serve static assets (CSS/JS)
-    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
+    // Serve static assets (CSS/JS) from embedded FS
+    if sub, err := fs.Sub(assets.FS, "web/static"); err == nil {
+        r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(sub))))
+    }
 
 	// Health endpoints
 	r.HandleFunc("/health", healthHandler).Methods("GET")
