@@ -208,6 +208,43 @@ func (h *Handlers) WeightHistoryHandler(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(response)
 }
 
+// WeightLatestHandler returns the latest weight for a user
+func (h *Handlers) WeightLatestHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    userIDStr := vars["userID"]
+
+    userID, err := user.NewUserID(userIDStr)
+    if err != nil {
+        http.Error(w, "Invalid user ID", http.StatusBadRequest)
+        return
+    }
+
+    latest, err := h.weightTracker.GetLatestWeight(userID)
+    if err != nil {
+        http.Error(w, fmt.Sprintf("Failed to get latest weight: %v", err), http.StatusInternalServerError)
+        return
+    }
+
+    resp := struct {
+        ID    string  `json:"id"`
+        Value float64 `json:"value"`
+        Unit  string  `json:"unit"`
+        Date  string  `json:"date"`
+        Time  string  `json:"time"`
+        Notes string  `json:"notes"`
+    }{
+        ID:    latest.ID().String(),
+        Value: latest.Value().Float64(),
+        Unit:  latest.Unit().String(),
+        Date:  latest.MeasuredAt().Format("2006-01-02"),
+        Time:  latest.MeasuredAt().Format("15:04"),
+        Notes: latest.Notes(),
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(resp)
+}
+
 // UserDashboardHandler serves individual user dashboard
 func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

@@ -40,7 +40,14 @@
         <section class="page__section">
             <div class="chart">
                 <div class="chart__head" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                    <div>Andamento Peso</div>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div>Andamento Peso</div>
+                        {{ if and .ActiveGoal .Progress }}
+                        <span class="caption" style="border:1px solid var(--border); padding:2px 8px;">
+                            Manca {{.Progress.WeightToLose}} kg in {{.Progress.DaysRemaining}} giorni
+                        </span>
+                        {{ end }}
+                    </div>
                     <div>
                         <label for="periodSelect" class="caption" style="margin-right:6px;">Periodo</label>
                         <select id="periodSelect">
@@ -120,21 +127,32 @@
             });
         }
 
+        function isoToday() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth()+1).padStart(2,'0');
+            const day = String(d.getDate()).padStart(2,'0');
+            return `${y}-${m}-${day}`;
+        }
+
         async function renderChart() {
             try {
                 const periodEl = document.getElementById('periodSelect');
                 const period = periodEl ? periodEl.value : '3months';
-                const res = await fetch(`/api/weights/{{.UserID}}?period=${period}`);
-                const data = await res.json();
+                const [data, latest] = await Promise.all([
+                    fetch(`/api/weights/{{.UserID}}?period=${period}`).then(r=>r.json()),
+                    fetch(`/api/weights/latest/{{.UserID}}`).then(r=>r.ok?r.json():null).catch(()=>null)
+                ]);
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
                 const labelsIso = averaged.map(p => p.iso);
                 const avgValues = averaged.map(p => p.value);
                 const rawPoints = data.map(w => ({ x: isoToIt(w.date), y: w.value, t: w.time }));
 
-                // latest point within current period for trajectory start
-                const latest = data.length ? data[data.length - 1] : null;
-                const planValues = latest ? buildPlanValues(labelsIso, latest.date, latest.value, goal) : Array(labels.length).fill(null);
+                // trajectory from today towards target using latest known value
+                const latestValue = latest && latest.value != null ? latest.value : (data.length ? data[data.length-1].value : null);
+                const latestIso = isoToday();
+                const planValues = (goal && latestValue != null) ? buildPlanValues(labelsIso, latestIso, latestValue, goal) : Array(labels.length).fill(null);
 
                 const config = {
                     type: 'line',

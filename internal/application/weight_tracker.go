@@ -132,6 +132,19 @@ func (wt *WeightTracker) GetRecentWeights(userID user.UserID, limit int) ([]*wei
     return ws, nil
 }
 
+// GetLatestWeight returns the most recent weight for a user
+func (wt *WeightTracker) GetLatestWeight(userID user.UserID) (*weight.Weight, error) {
+    // Verify user exists
+    if _, err := wt.userRepo.FindByID(userID); err != nil {
+        return nil, fmt.Errorf("%w: %s", ErrUserNotFound, err.Error())
+    }
+    w, err := wt.weightRepo.FindLatestByUserID(userID)
+    if err != nil {
+        return nil, fmt.Errorf("failed to retrieve latest weight: %w", err)
+    }
+    return w, nil
+}
+
 // CalculateWeightTrend calculates weight trend over a time period
 func (wt *WeightTracker) CalculateWeightTrend(userID user.UserID, period TimePeriod) (WeightTrend, error) {
 	weights, err := wt.GetWeightHistory(userID, period)
