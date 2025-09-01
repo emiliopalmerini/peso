@@ -49,7 +49,20 @@
 
         <section class="page__section">
             <div class="chart">
-                <div class="chart__head">Andamento Peso</div>
+                <div class="chart__head" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                    <div>Andamento Peso</div>
+                    <div>
+                        <label for="periodSelect" class="caption" style="margin-right:6px;">Periodo</label>
+                        <select id="periodSelect">
+                            <option value="week">1 settimana</option>
+                            <option value="month">1 mese</option>
+                            <option value="3months" selected>3 mesi</option>
+                            <option value="6months">6 mesi</option>
+                            <option value="year">1 anno</option>
+                            <option value="all">Tutto</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="chart__body">
                     <canvas id="weightChart"></canvas>
                 </div>
@@ -79,7 +92,9 @@
 
         async function renderChart() {
             try {
-                const res = await fetch('/api/weights/{{.UserID}}?period=3months');
+                const periodEl = document.getElementById('periodSelect');
+                const period = periodEl ? periodEl.value : '3months';
+                const res = await fetch(`/api/weights/{{.UserID}}?period=${period}`);
                 const data = await res.json();
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
@@ -124,6 +139,11 @@
 
         document.addEventListener('DOMContentLoaded', renderChart);
         document.body.addEventListener('weight-updated', renderChart);
+        document.addEventListener('change', (e) => {
+            if (e.target && e.target.id === 'periodSelect') {
+                renderChart();
+            }
+        });
     </script>
 </body>
 </html>
