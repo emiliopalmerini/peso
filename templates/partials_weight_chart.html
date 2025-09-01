@@ -1,0 +1,64 @@
+<canvas id="weightChart" style="height:100%; width:100%;"></canvas>
+
+<script>
+  (function() {
+    const points = {{ toJson .Points }};
+    const labels = points.map(p => new Date(p.X));
+    const values = points.map(p => p.Y);
+
+    const ctx = document.getElementById('weightChart').getContext('2d');
+
+    if (!points.length) {
+      ctx.font = '16px Arial';
+      ctx.fillStyle = '#6B7280';
+      ctx.textAlign = 'center';
+      ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+      return;
+    }
+
+    const datasets = [{
+      label: 'Weight',
+      data: values,
+      borderColor: '#4F46E5',
+      backgroundColor: 'rgba(79, 70, 229, 0.1)',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#4F46E5',
+      pointBorderColor: '#ffffff',
+      pointBorderWidth: 2,
+      pointRadius: 4
+    }];
+
+    {{ if .GoalTarget }}
+    datasets.push({
+      label: 'Goal',
+      data: Array(values.length).fill({{ .GoalTarget }}),
+      borderColor: '#10B981',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderDash: [5, 5],
+      pointRadius: 0
+    });
+    {{ end }}
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels.map(d => d.toLocaleDateString()),
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' }
+        },
+        scales: {
+          y: { beginAtZero: false },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  })();
+</script>

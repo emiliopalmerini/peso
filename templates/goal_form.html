@@ -1,0 +1,43 @@
+<h2 class="page__title">Imposta obiettivo</h2>
+<form class="form" hx-post="/api/goals" hx-target="#panel" hx-swap="innerHTML" hx-indicator=".indicator" hx-after-request="htmx.trigger('body','weight-updated')">
+  <input type="hidden" name="user_id" value="{{.UserID}}">
+
+  <div class="field">
+    <label>Tipo</label>
+    <select name="goal_type" required>
+      <option value="">Seleziona…</option>
+      <option value="weight_loss">Perdere peso</option>
+      <option value="weight_gain">Aumentare peso</option>
+      <option value="maintenance">Mantenere</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Peso target</label>
+    <div style="display:flex; gap:8px;">
+      <input type="number" name="target_weight" step="0.1" min="10" max="500" required placeholder="70.0">
+      <select name="unit" required>
+        <option value="kg">kg</option>
+        <option value="lb">lb</option>
+      </select>
+    </div>
+    {{if .CurrentWeight}}
+    <div class="caption">Peso attuale: {{.CurrentWeight.Value}} {{.CurrentWeight.Unit}}</div>
+    {{end}}
+  </div>
+
+  <div class="field">
+    <label>Data target</label>
+    <input type="date" name="target_date" min="{{.Today}}" required>
+  </div>
+
+  <div class="field">
+    <label>Note (opzionale)</label>
+    <input type="text" name="notes" maxlength="200" placeholder="Motivazione o dettagli">
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn-primary">Imposta</button>
+    <span class="indicator"><span class="spinner"></span> Invio…</span>
+  </div>
+</form>

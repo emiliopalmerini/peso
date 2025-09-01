@@ -59,3 +59,9 @@ logs/
 
 # Claude Code directory
 .claude/
+
+# Go local build cache
+.gocache/
+
+# Root binary
+peso

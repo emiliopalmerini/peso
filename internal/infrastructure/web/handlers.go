@@ -267,14 +267,22 @@ func (h *Handlers) WeightFormHandler(w http.ResponseWriter, r *http.Request) {
 
 // loadTemplates loads HTML templates from files
 func loadTemplates() *template.Template {
-	tmpl := template.New("").Funcs(template.FuncMap{
-		"title": func(s string) string {
-			if len(s) == 0 {
-				return s
-			}
-			return string(s[0]-32) + s[1:]
-		},
-	})
+    tmpl := template.New("").Funcs(template.FuncMap{
+        "title": func(s string) string {
+            if len(s) == 0 {
+                return s
+            }
+            return string(s[0]-32) + s[1:]
+        },
+        // toJson marshals a value to JSON for safe inline JS usage in templates
+        "toJson": func(v interface{}) template.JS {
+            b, err := json.Marshal(v)
+            if err != nil {
+                return template.JS("null")
+            }
+            return template.JS(string(b))
+        },
+    })
 	
 	// Load templates from files
 	template.Must(tmpl.ParseGlob("templates/*.html"))

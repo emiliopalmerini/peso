@@ -4,90 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard {{.UserID | title}}</title>
+    <link rel="stylesheet" href="/static/min.css">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
-        .card { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6; }
-        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
-        .btn:hover { background: #0056b3; }
-        .chart-container { 
-            position: relative; 
-            height: 300px; 
-            margin: 20px 0;
-        }
-        .weight-list {
-            max-height: 200px;
-            overflow-y: auto;
-            margin: 10px 0;
-        }
-        .weight-entry {
-            padding: 8px;
-            border-bottom: 1px solid #e9ecef;
-            display: flex;
-            justify-content: space-between;
-        }
-        .weight-entry:last-child {
-            border-bottom: none;
-        }
-    </style>
 </head>
-<body>
-    <h1>Dashboard {{.UserID | title}}</h1>
-    <a href="/">← Torna alla Home</a>
-    
-    <div class="grid">
-        <div class="card">
-            <h2>📊 Peso Recente</h2>
-            <div id="recent-weights" class="weight-list">
+<body class="style-minimal">
+    <header class="topbar">
+        <div class="container topbar__inner">
+            <a class="brand" href="/">Peso</a>
+        </div>
+    </header>
+
+    <main class="container page">
+        <h1 class="page__title">Dashboard {{.UserID | title}}</h1>
+
+        <section class="page__section">
+            <div class="list" id="recent-weights">
                 {{if .RecentWeights}}
                     {{range .RecentWeights}}
-                    <div class="weight-entry">
-                        <span>{{.Date}}: {{.Value}} {{.Unit}}</span>
-                        {{if .Notes}}<small>{{.Notes}}</small>{{end}}
+                    <div class="row">
+                        <div>{{.Date}}</div>
+                        <div>{{.Value}} {{.Unit}}{{if .Notes}} · <span class="caption">{{.Notes}}</span>{{end}}</div>
                     </div>
                     {{end}}
                 {{else}}
-                    <p>Nessun peso registrato di recente</p>
+                    <div class="row">
+                        <div class="caption">Nessun peso registrato di recente</div>
+                    </div>
                 {{end}}
             </div>
-            <button hx-get="/users/{{.UserID}}/weight-form" hx-target="#weight-form" class="btn">Registra Peso</button>
+            <div class="actions">
+                <button hx-get="/users/{{.UserID}}/weight-form" hx-target="#weight-form" class="btn btn-primary">Registra Peso</button>
+            </div>
             <div id="weight-form"></div>
-        </div>
-        
-        <div class="card">
-            <h2>🎯 Obiettivo</h2>
-            {{if .ActiveGoal}}
-                <p><strong>Target:</strong> {{.ActiveGoal.TargetWeight}} {{.ActiveGoal.Unit}}</p>
-                <p><strong>Scadenza:</strong> {{.ActiveGoal.TargetDate}}</p>
-                {{if .Progress}}
-                    <p><strong>Da perdere/guadagnare:</strong> {{.Progress.WeightToLose}} kg</p>
-                    <p><strong>Giorni rimanenti:</strong> {{.Progress.DaysRemaining}}</p>
-                {{end}}
-            {{else}}
-                <p>Nessun obiettivo attivo</p>
-                <button class="btn">Imposta Obiettivo</button>
-            {{end}}
-        </div>
-    </div>
+        </section>
 
-    <div class="card">
-        <h2>📈 Andamento Peso</h2>
-        <div class="chart-container">
-            <canvas id="weightChart"></canvas>
-        </div>
-    </div>
+        <section class="page__section">
+            <div class="list">
+                <div class="row"><strong>Obiettivo</strong></div>
+                {{if .ActiveGoal}}
+                    <div class="row"><div>Target</div><div>{{.ActiveGoal.TargetWeight}} {{.ActiveGoal.Unit}}</div></div>
+                    <div class="row"><div>Scadenza</div><div>{{.ActiveGoal.TargetDate}}</div></div>
+                    {{if .Progress}}
+                    <div class="row"><div>Da perdere/guadagnare</div><div>{{.Progress.WeightToLose}} kg</div></div>
+                    <div class="row"><div>Giorni rimanenti</div><div>{{.Progress.DaysRemaining}}</div></div>
+                    {{end}}
+                {{else}}
+                    <div class="row"><div class="caption">Nessun obiettivo attivo</div></div>
+                    <div class="actions"><button class="btn btn-primary">Imposta Obiettivo</button></div>
+                {{end}}
+            </div>
+        </section>
+
+        <section class="page__section">
+            <div class="chart">
+                <div class="chart__head">Andamento Peso</div>
+                <div class="chart__body">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script>
-        // Load weight chart data
         fetch('/api/weights/{{.UserID}}?period=3months')
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('weightChart').getContext('2d');
                 const labels = data.map(w => w.date);
                 const weights = data.map(w => w.value);
-                
+
                 new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -95,35 +81,27 @@
                         datasets: [{
                             label: 'Peso (kg)',
                             data: weights,
-                            borderColor: 'rgb(75, 192, 192)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            tension: 0.1
+                            borderColor: 'rgb(17, 17, 17)',
+                            backgroundColor: 'rgba(17, 17, 17, 0.05)',
+                            tension: 0.2,
+                            pointRadius: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
                         scales: {
-                            y: {
-                                beginAtZero: false,
-                                title: {
-                                    display: true,
-                                    text: 'Peso (kg)'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Data'
-                                }
-                            }
+                            y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
+                            x: { grid: { display: false } }
                         }
                     }
                 });
             })
             .catch(error => {
                 console.error('Error loading chart data:', error);
-                document.querySelector('.chart-container').innerHTML = '<p>Errore nel caricamento del grafico</p>';
+                const body = document.querySelector('.chart__body');
+                if (body) body.innerHTML = '<div class="caption">Errore nel caricamento del grafico</div>';
             });
     </script>
 </body>

@@ -50,18 +50,21 @@ func main() {
 	// Setup HTTP server
 	router := setupRouter(weightTracker, goalTracker)
 
-	fmt.Printf("🚀 Peso app starting on port %s\n", port)
-	fmt.Printf("📊 Database: %s\n", dbPath)
-	fmt.Printf("🌐 Open http://localhost:%s\n", port)
+    fmt.Printf("Peso app starting on port %s\n", port)
+    fmt.Printf("Database: %s\n", dbPath)
+    fmt.Printf("Open http://localhost:%s\n", port)
 
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
 func setupRouter(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker) *mux.Router {
-	r := mux.NewRouter()
+    r := mux.NewRouter()
 
-	// Initialize web handlers
-	handlers := web.NewHandlers(weightTracker, goalTracker)
+    // Initialize web handlers
+    handlers := web.NewHandlers(weightTracker, goalTracker)
+
+    // Serve static assets (CSS/JS)
+    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	// Health endpoints
 	r.HandleFunc("/health", healthHandler).Methods("GET")
@@ -94,11 +97,11 @@ func readyHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func testBasicFunctionality(userRepo interface{}) error {
-	fmt.Println("🧪 Testing basic domain functionality...")
+    fmt.Println("Testing basic domain functionality...")
 	
 	// This would test our domain objects work correctly
 	// For now, just return success to show the app structure works
-	fmt.Println("✅ Domain layer tests passed")
+    fmt.Println("Domain layer tests passed")
 	return nil
 }
 
