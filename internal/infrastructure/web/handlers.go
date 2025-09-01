@@ -75,17 +75,20 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Parse date
-	var measuredAt time.Time
-	if dateStr == "" {
-		measuredAt = time.Now()
-	} else {
-		measuredAt, err = time.Parse("2006-01-02", dateStr)
-		if err != nil {
-			http.Error(w, "Invalid date format", http.StatusBadRequest)
-			return
-		}
-	}
+    // Parse date and attach current time (hour/min/sec) automatically
+    var measuredAt time.Time
+    if dateStr == "" {
+        measuredAt = time.Now()
+    } else {
+        // Parse provided date in local timezone
+        d, err2 := time.ParseInLocation("2006-01-02", dateStr, time.Local)
+        if err2 != nil {
+            http.Error(w, "Invalid date format", http.StatusBadRequest)
+            return
+        }
+        now := time.Now()
+        measuredAt = time.Date(d.Year(), d.Month(), d.Day(), now.Hour(), now.Minute(), now.Second(), 0, time.Local)
+    }
 	
 	// Create domain objects
 	userID, err := user.NewUserID(userIDStr)
@@ -180,23 +183,25 @@ func (h *Handlers) WeightHistoryHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	
 	// Convert to JSON-friendly format
-	type WeightResponse struct {
-		ID     string  `json:"id"`
-		Value  float64 `json:"value"`
-		Unit   string  `json:"unit"`
-		Date   string  `json:"date"`
-		Notes  string  `json:"notes"`
-	}
+    type WeightResponse struct {
+        ID     string  `json:"id"`
+        Value  float64 `json:"value"`
+        Unit   string  `json:"unit"`
+        Date   string  `json:"date"`
+        Time   string  `json:"time"`
+        Notes  string  `json:"notes"`
+    }
 	
 	var response []WeightResponse
 	for _, w := range weights {
-		response = append(response, WeightResponse{
-			ID:    w.ID().String(),
-			Value: w.Value().Float64(),
-			Unit:  w.Unit().String(),
-			Date:  w.MeasuredAt().Format("2006-01-02"),
-			Notes: w.Notes(),
-		})
+        response = append(response, WeightResponse{
+            ID:    w.ID().String(),
+            Value: w.Value().Float64(),
+            Unit:  w.Unit().String(),
+            Date:  w.MeasuredAt().Format("2006-01-02"),
+            Time:  w.MeasuredAt().Format("15:04"),
+            Notes: w.Notes(),
+        })
 	}
 	
 	w.Header().Set("Content-Type", "application/json")

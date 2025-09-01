@@ -110,7 +110,7 @@
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
                 const avgValues = averaged.map(p => p.value);
-                const rawPoints = data.map(w => ({ x: isoToIt(w.date), y: w.value }));
+                const rawPoints = data.map(w => ({ x: isoToIt(w.date), y: w.value, t: w.time }));
 
                 const config = {
                     type: 'line',
@@ -146,7 +146,21 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => items[0]?.label || '',
+                                    label: (ctx) => {
+                                        if (ctx.dataset.type === 'scatter') {
+                                            const time = ctx.raw && ctx.raw.t ? ctx.raw.t : '';
+                                            return time ? `Ora ${time} · ${ctx.formattedValue} kg` : `${ctx.formattedValue} kg`;
+                                        }
+                                        return `Media ${ctx.formattedValue} kg`;
+                                    }
+                                }
+                            }
+                        },
                         scales: {
                             y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
                             x: { grid: { display: false } }
