@@ -6,11 +6,13 @@ import (
     "net/http"
     "os"
     "io/fs"
+    "log/slog"
 
     "peso/internal/application"
     "peso/internal/infrastructure/persistence"
     "peso/internal/infrastructure/web"
     assets "peso"
+    "peso/internal/infrastructure/logging"
 
     "github.com/gorilla/mux"
 )
@@ -18,6 +20,8 @@ import (
 // We'll load migrations from the filesystem at runtime for now
 
 func main() {
+    // Logger
+    logger := logging.NewLogger(getEnv("LOG_LEVEL", "info"))
 	// Get configuration from environment
 	port := getEnv("PORT", "8080")
 	dbPath := getEnv("DB_PATH", "./peso.db")
@@ -50,20 +54,26 @@ func main() {
 	}
 
 	// Setup HTTP server
-	router := setupRouter(weightTracker, goalTracker)
+    router := setupRouter(weightTracker, goalTracker, logger)
 
-    fmt.Printf("Peso app starting on port %s\n", port)
-    fmt.Printf("Database: %s\n", dbPath)
-    fmt.Printf("Open http://localhost:%s\n", port)
+    logger.Info("server_start", 
+        "port", port,
+        "db_path", dbPath,
+    )
 
-	log.Fatal(http.ListenAndServe(":"+port, router))
+    log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
-func setupRouter(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker) *mux.Router {
+func setupRouter(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker, logger *slog.Logger) *mux.Router {
     r := mux.NewRouter()
 
     // Initialize web handlers
-    handlers := web.NewHandlers(weightTracker, goalTracker)
+    handlers := web.NewHandlers(weightTracker, goalTracker, logger)
+
+    // Middleware
+    r.Use(logging.RequestID)
+    r.Use(logging.Recoverer(logger))
+    r.Use(logging.RequestLogger(logger))
 
     // Serve static assets (CSS/JS) from embedded FS
     if sub, err := fs.Sub(assets.FS, "web/static"); err == nil {
@@ -74,8 +84,8 @@ func setupRouter(weightTracker *application.WeightTracker, goalTracker *applicat
 	r.HandleFunc("/health", healthHandler).Methods("GET")
 	r.HandleFunc("/ready", readyHandler).Methods("GET")
 
-	// Web UI endpoints
-	r.HandleFunc("/", handlers.HomeHandler).Methods("GET")
+    // Web UI endpoints
+    r.HandleFunc("/", handlers.HomeHandler).Methods("GET")
     r.HandleFunc("/users/{userID}", handlers.UserDashboardHandler).Methods("GET")
     r.HandleFunc("/users/{userID}/recent-weights", handlers.RecentWeightsHandler).Methods("GET")
 	r.HandleFunc("/users/{userID}/weight-form", handlers.WeightFormHandler).Methods("GET")

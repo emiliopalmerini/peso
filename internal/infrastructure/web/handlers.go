@@ -4,8 +4,10 @@ import (
     "encoding/json"
     "fmt"
     "html/template"
+    "log/slog"
     "net/http"
     "strconv"
+    "strings"
     "time"
 
     "peso/internal/application"
@@ -21,14 +23,16 @@ type Handlers struct {
 	weightTracker *application.WeightTracker
 	goalTracker   *application.GoalTracker
 	templates     *template.Template
+	logger        *slog.Logger
 }
 
 // NewHandlers creates new web handlers
-func NewHandlers(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker) *Handlers {
+func NewHandlers(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker, logger *slog.Logger) *Handlers {
 	return &Handlers{
 		weightTracker: weightTracker,
 		goalTracker:   goalTracker,
 		templates:     loadTemplates(),
+		logger:        logger,
 	}
 }
 
@@ -42,10 +46,10 @@ func (h *Handlers) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		Users: []string{"giada", "emilio"},
 	}
 	
-	if err := h.templates.ExecuteTemplate(w, "index.html", data); err != nil {
-		http.Error(w, "Template error", http.StatusInternalServerError)
-		return
-	}
+    if err := h.templates.ExecuteTemplate(w, "index.html", data); err != nil {
+        writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
+        return
+    }
 }
 
 // AddWeightHandler handles weight recording
@@ -374,7 +378,43 @@ func loadTemplates() *template.Template {
 
 // Helper function to convert typed slice to interface slice for templates
 func interfaceSlice(slice interface{}) []interface{} {
-	// This is a simplified implementation
-	// In a real app, you'd handle this more robustly
-	return []interface{}{}
+    // This is a simplified implementation
+    // In a real app, you'd handle this more robustly
+    return []interface{}{}
+}
+
+// writeError writes a uniform error structure and logs it
+func writeError(logger *slog.Logger, w http.ResponseWriter, r *http.Request, status int, message string, err error) {
+    reqID := r.Header.Get("X-Request-ID")
+    if err != nil {
+        logger.Error("http_error",
+            slog.Int("status", status),
+            slog.String("message", message),
+            slog.Any("error", err),
+            slog.String("path", r.URL.Path),
+            slog.String("request_id", reqID),
+        )
+    } else {
+        logger.Warn("http_error",
+            slog.Int("status", status),
+            slog.String("message", message),
+            slog.String("path", r.URL.Path),
+            slog.String("request_id", reqID),
+        )
+    }
+
+    // JSON for /api, HTML/plain otherwise
+    isAPI := strings.HasPrefix(r.URL.Path, "/api/")
+    if isAPI {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(status)
+        _ = json.NewEncoder(w).Encode(map[string]any{
+            "success":    false,
+            "error":      http.StatusText(status),
+            "message":    message,
+            "request_id": reqID,
+        })
+        return
+    }
+    http.Error(w, message, status)
 }
