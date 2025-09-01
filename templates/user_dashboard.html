@@ -78,6 +78,7 @@
     <script>
         let chart;
         const ctx = document.getElementById('weightChart').getContext('2d');
+        const goal = {{ if .ActiveGoal }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}" } {{ else }} null {{ end }};
 
         function isoToIt(iso) {
             // iso 'YYYY-MM-DD' -> 'DD/MM/YYYY'
@@ -101,6 +102,24 @@
             return averaged;
         }
 
+        function buildPlanValues(labelsIso, latestIso, latestValue, goalInfo) {
+            if (!goalInfo || !latestIso) return Array(labelsIso.length).fill(null);
+            const start = new Date(latestIso);
+            const target = new Date(goalInfo.targetDate);
+            if (isNaN(start) || isNaN(target) || target <= start) {
+                return Array(labelsIso.length).fill(null);
+            }
+            const totalDays = Math.round((target - start) / 86400000);
+            if (totalDays <= 0) return Array(labelsIso.length).fill(null);
+            const delta = (goalInfo.targetWeight - latestValue) / totalDays;
+            return labelsIso.map(iso => {
+                const d = new Date(iso);
+                if (d < start || d > target) return null;
+                const daysFromStart = Math.round((d - start) / 86400000);
+                return +(latestValue + delta * daysFromStart).toFixed(1);
+            });
+        }
+
         async function renderChart() {
             try {
                 const periodEl = document.getElementById('periodSelect');
@@ -109,8 +128,13 @@
                 const data = await res.json();
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
+                const labelsIso = averaged.map(p => p.iso);
                 const avgValues = averaged.map(p => p.value);
                 const rawPoints = data.map(w => ({ x: isoToIt(w.date), y: w.value, t: w.time }));
+
+                // latest point within current period for trajectory start
+                const latest = data.length ? data[data.length - 1] : null;
+                const planValues = latest ? buildPlanValues(labelsIso, latest.date, latest.value, goal) : Array(labels.length).fill(null);
 
                 const config = {
                     type: 'line',
@@ -140,6 +164,17 @@
                                 pointBorderWidth: 2,
                                 pointBackgroundColor: '#fff',
                                 pointBorderColor: 'rgb(17, 17, 17)'
+                            },
+                            {
+                                type: 'line',
+                                label: 'Traiettoria obiettivo',
+                                data: planValues,
+                                borderColor: 'rgba(0,0,0,0.35)',
+                                backgroundColor: 'transparent',
+                                borderWidth: 1,
+                                borderDash: [6, 6],
+                                pointRadius: 0,
+                                spanGaps: true
                             }
                         ]
                     },
@@ -172,6 +207,21 @@
                     chart.data.labels = labels;
                     chart.data.datasets[0].data = rawPoints;
                     chart.data.datasets[1].data = avgValues;
+                    if (chart.data.datasets[2]) {
+                        chart.data.datasets[2].data = planValues;
+                    } else {
+                        chart.data.datasets.push({
+                            type: 'line',
+                            label: 'Traiettoria obiettivo',
+                            data: planValues,
+                            borderColor: 'rgba(0,0,0,0.35)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            borderDash: [6, 6],
+                            pointRadius: 0,
+                            spanGaps: true
+                        });
+                    }
                     chart.update();
                 } else {
                     chart = new Chart(ctx, config);
