@@ -18,17 +18,7 @@
     <main class="container page">
         <h1 class="page__title">Dashboard {{.UserID | title}}</h1>
 
-        <section class="page__section">
-            <div class="list" id="recent-weights" 
-                 hx-get="/users/{{.UserID}}/recent-weights" 
-                 hx-trigger="load, weight-updated from:body">
-                <div class="row"><div class="caption">Caricamento…</div></div>
-            </div>
-            <div class="actions">
-                <button hx-get="/users/{{.UserID}}/weight-form" hx-target="#weight-form" class="btn btn-primary">Registra Peso</button>
-            </div>
-            <div id="weight-form"></div>
-        </section>
+        <!-- Actions (Registra) moved after chart -->
 
         <section class="page__section">
             <div class="list">
@@ -68,11 +58,32 @@
                 </div>
             </div>
         </section>
+
+        <section class="page__section">
+            <div class="actions">
+                <button hx-get="/users/{{.UserID}}/weight-form" hx-target="#weight-form" class="btn btn-primary">Registra Peso</button>
+            </div>
+            <div id="weight-form"></div>
+        </section>
+
+        <section class="page__section">
+            <div class="list" id="recent-weights"
+                 hx-get="/users/{{.UserID}}/recent-weights"
+                 hx-trigger="load, weight-updated from:body">
+                <div class="row"><div class="caption">Caricamento…</div></div>
+            </div>
+        </section>
     </main>
 
     <script>
         let chart;
         const ctx = document.getElementById('weightChart').getContext('2d');
+
+        function isoToIt(iso) {
+            // iso 'YYYY-MM-DD' -> 'DD/MM/YYYY'
+            const [y,m,d] = iso.split('-');
+            return `${d}/${m}/${y}`;
+        }
 
         function aggregateDailyAverage(data) {
             const groups = new Map();
@@ -85,7 +96,7 @@
             const averaged = dates.map(d => {
                 const vals = groups.get(d);
                 const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
-                return { date: d, value: avg };
+                return { iso: d, date: isoToIt(d), value: avg };
             });
             return averaged;
         }
@@ -99,7 +110,7 @@
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
                 const avgValues = averaged.map(p => p.value);
-                const rawPoints = data.map(w => ({ x: w.date, y: w.value }));
+                const rawPoints = data.map(w => ({ x: isoToIt(w.date), y: w.value }));
 
                 const config = {
                     type: 'line',

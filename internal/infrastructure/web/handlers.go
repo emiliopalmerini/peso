@@ -269,7 +269,7 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
     var rows []Row
     for _, wgt := range weights {
         rows = append(rows, Row{
-            Date:  wgt.MeasuredAt().Format("2006-01-02 15:04"),
+            Date:  wgt.MeasuredAt().Format("02/01/2006"),
             Value: fmt.Sprintf("%.1f", wgt.Value().Float64()),
             Unit:  wgt.Unit().String(),
             Notes: wgt.Notes(),
