@@ -72,7 +72,8 @@ func setupRouter(weightTracker *application.WeightTracker, goalTracker *applicat
 
 	// Web UI endpoints
 	r.HandleFunc("/", handlers.HomeHandler).Methods("GET")
-	r.HandleFunc("/users/{userID}", handlers.UserDashboardHandler).Methods("GET")
+    r.HandleFunc("/users/{userID}", handlers.UserDashboardHandler).Methods("GET")
+    r.HandleFunc("/users/{userID}/recent-weights", handlers.RecentWeightsHandler).Methods("GET")
 	r.HandleFunc("/users/{userID}/weight-form", handlers.WeightFormHandler).Methods("GET")
 
 	// API endpoints

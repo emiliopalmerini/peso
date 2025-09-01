@@ -44,8 +44,8 @@ type WeightTrend struct {
 
 // WeightTracker implements weight tracking business logic
 type WeightTracker struct {
-	userRepo   interfaces.UserRepository
-	weightRepo interfaces.WeightRepository
+    userRepo   interfaces.UserRepository
+    weightRepo interfaces.WeightRepository
 }
 
 var (
@@ -114,6 +114,22 @@ func (wt *WeightTracker) GetWeightHistory(userID user.UserID, period TimePeriod)
 	}
 	
 	return weights, nil
+}
+
+// GetRecentWeights retrieves the most recent N weights for a user (descending by date)
+func (wt *WeightTracker) GetRecentWeights(userID user.UserID, limit int) ([]*weight.Weight, error) {
+    // Verify user exists
+    if _, err := wt.userRepo.FindByID(userID); err != nil {
+        return nil, fmt.Errorf("%w: %s", ErrUserNotFound, err.Error())
+    }
+    if limit <= 0 {
+        limit = 10
+    }
+    ws, err := wt.weightRepo.FindByUserID(userID, limit)
+    if err != nil {
+        return nil, fmt.Errorf("failed to retrieve recent weights: %w", err)
+    }
+    return ws, nil
 }
 
 // CalculateWeightTrend calculates weight trend over a time period

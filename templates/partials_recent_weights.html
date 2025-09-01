@@ -1,0 +1,12 @@
+{{/* Partial: Recent Weights List (rows only) */}}
+{{ if .Rows }}
+  {{ range .Rows }}
+  <div class="row">
+    <div>{{ .Date }}</div>
+    <div>{{ .Value }} {{ .Unit }}{{ if .Notes }} · <span class="caption">{{ .Notes }}</span>{{ end }}</div>
+  </div>
+  {{ end }}
+{{ else }}
+  <div class="row"><div class="caption">Nessun peso registrato di recente</div></div>
+{{ end }}
+

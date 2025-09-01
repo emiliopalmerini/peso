@@ -19,19 +19,10 @@
         <h1 class="page__title">Dashboard {{.UserID | title}}</h1>
 
         <section class="page__section">
-            <div class="list" id="recent-weights">
-                {{if .RecentWeights}}
-                    {{range .RecentWeights}}
-                    <div class="row">
-                        <div>{{.Date}}</div>
-                        <div>{{.Value}} {{.Unit}}{{if .Notes}} · <span class="caption">{{.Notes}}</span>{{end}}</div>
-                    </div>
-                    {{end}}
-                {{else}}
-                    <div class="row">
-                        <div class="caption">Nessun peso registrato di recente</div>
-                    </div>
-                {{end}}
+            <div class="list" id="recent-weights" 
+                 hx-get="/users/{{.UserID}}/recent-weights" 
+                 hx-trigger="load, weight-updated from:body">
+                <div class="row"><div class="caption">Caricamento…</div></div>
             </div>
             <div class="actions">
                 <button hx-get="/users/{{.UserID}}/weight-form" hx-target="#weight-form" class="btn btn-primary">Registra Peso</button>
@@ -67,20 +58,39 @@
     </main>
 
     <script>
-        fetch('/api/weights/{{.UserID}}?period=3months')
-            .then(response => response.json())
-            .then(data => {
-                const ctx = document.getElementById('weightChart').getContext('2d');
-                const labels = data.map(w => w.date);
-                const weights = data.map(w => w.value);
+        let chart;
+        const ctx = document.getElementById('weightChart').getContext('2d');
 
-                new Chart(ctx, {
+        function aggregateDailyAverage(data) {
+            const groups = new Map();
+            for (const w of data) {
+                const d = w.date; // already YYYY-MM-DD
+                if (!groups.has(d)) groups.set(d, []);
+                groups.get(d).push(w.value);
+            }
+            const dates = Array.from(groups.keys()).sort();
+            const averaged = dates.map(d => {
+                const vals = groups.get(d);
+                const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+                return { date: d, value: avg };
+            });
+            return averaged;
+        }
+
+        async function renderChart() {
+            try {
+                const res = await fetch('/api/weights/{{.UserID}}?period=3months');
+                const data = await res.json();
+                const averaged = aggregateDailyAverage(data);
+                const labels = averaged.map(p => p.date);
+                const values = averaged.map(p => p.value);
+
+                const config = {
                     type: 'line',
                     data: {
-                        labels: labels,
+                        labels,
                         datasets: [{
-                            label: 'Peso (kg)',
-                            data: weights,
+                            data: values,
                             borderColor: 'rgb(17, 17, 17)',
                             backgroundColor: 'rgba(17, 17, 17, 0.05)',
                             tension: 0.2,
@@ -96,13 +106,24 @@
                             x: { grid: { display: false } }
                         }
                     }
-                });
-            })
-            .catch(error => {
-                console.error('Error loading chart data:', error);
+                };
+
+                if (chart) {
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = values;
+                    chart.update();
+                } else {
+                    chart = new Chart(ctx, config);
+                }
+            } catch (e) {
+                console.error('Error loading chart data:', e);
                 const body = document.querySelector('.chart__body');
                 if (body) body.innerHTML = '<div class="caption">Errore nel caricamento del grafico</div>';
-            });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', renderChart);
+        document.body.addEventListener('weight-updated', renderChart);
     </script>
 </body>
 </html>

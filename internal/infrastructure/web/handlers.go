@@ -213,11 +213,8 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	
-	// Get recent weights
-	recentWeights, _ := h.weightTracker.GetWeightHistory(userID, application.TimePeriodLastWeek)
-	
-	// Get active goal if exists
-	activeGoal, _ := h.goalTracker.GetActiveGoal(userID)
+    // Get active goal if exists
+    activeGoal, _ := h.goalTracker.GetActiveGoal(userID)
 	
 	// Calculate goal progress if goal exists
 	var progress *application.GoalProgress
@@ -228,22 +225,64 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 	
-	data := struct {
-		UserID        string
-		RecentWeights []interface{}
-		ActiveGoal    interface{}
-		Progress      *application.GoalProgress
-	}{
-		UserID:        userIDStr,
-		RecentWeights: interfaceSlice(recentWeights),
-		ActiveGoal:    activeGoal,
-		Progress:      progress,
-	}
+    data := struct {
+        UserID     string
+        ActiveGoal interface{}
+        Progress   *application.GoalProgress
+    }{
+        UserID:     userIDStr,
+        ActiveGoal: activeGoal,
+        Progress:   progress,
+    }
 	
 	if err := h.templates.ExecuteTemplate(w, "user_dashboard.html", data); err != nil {
 		http.Error(w, "Template error", http.StatusInternalServerError)
 		return
 	}
+}
+
+// RecentWeightsHandler returns the HTML partial with recent weights list
+func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    userIDStr := vars["userID"]
+
+    userID, err := user.NewUserID(userIDStr)
+    if err != nil {
+        http.Error(w, "Invalid user ID", http.StatusBadRequest)
+        return
+    }
+
+    weights, err := h.weightTracker.GetRecentWeights(userID, 10)
+    if err != nil {
+        http.Error(w, "Failed to load recent weights", http.StatusInternalServerError)
+        return
+    }
+
+    // Build view models
+    type Row struct {
+        Date  string
+        Value string
+        Unit  string
+        Notes string
+    }
+    var rows []Row
+    for _, wgt := range weights {
+        rows = append(rows, Row{
+            Date:  wgt.MeasuredAt().Format("2006-01-02 15:04"),
+            Value: fmt.Sprintf("%.1f", wgt.Value().Float64()),
+            Unit:  wgt.Unit().String(),
+            Notes: wgt.Notes(),
+        })
+    }
+
+    data := struct {
+        Rows []Row
+    }{Rows: rows}
+
+    if err := h.templates.ExecuteTemplate(w, "partials_recent_weights.html", data); err != nil {
+        http.Error(w, "Template error", http.StatusInternalServerError)
+        return
+    }
 }
 
 // WeightFormHandler serves the weight entry form
