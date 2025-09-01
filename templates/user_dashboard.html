@@ -21,24 +21,10 @@
         <!-- Actions (Registra) moved after chart -->
 
         <section class="page__section">
-            <div class="list">
-                <div class="row"><strong>Obiettivo</strong></div>
-                {{if .ActiveGoal}}
-                    <div class="row"><div>Target</div><div>{{.ActiveGoal.TargetWeight}} {{.ActiveGoal.Unit}}</div></div>
-                    <div class="row"><div>Scadenza</div><div>{{.ActiveGoal.TargetDate}}</div></div>
-                    {{if .Progress}}
-                    <div class="row"><div>Da perdere/guadagnare</div><div>{{.Progress.WeightToLose}} kg</div></div>
-                    <div class="row"><div>Giorni rimanenti</div><div>{{.Progress.DaysRemaining}}</div></div>
-                    {{end}}
-                {{else}}
-                    <div class="row"><div class="caption">Nessun obiettivo attivo</div></div>
-                    <div class="actions">
-                        <button class="btn btn-primary" 
-                                hx-get="/users/{{.UserID}}/goal-form" 
-                                hx-target="#panel" 
-                                hx-swap="innerHTML">Imposta Obiettivo</button>
-                    </div>
-                {{end}}
+            <div id="goal-summary"
+                 hx-get="/users/{{.UserID}}/goal-summary"
+                 hx-trigger="load, weight-updated from:body, goal-updated from:body">
+                <div class="list"><div class="row"><div class="caption">Caricamento…</div></div></div>
             </div>
         </section>
 
@@ -49,11 +35,9 @@
                 <div class="chart__head" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                     <div style="display:flex; align-items:center; gap:12px;">
                         <div>Andamento Peso</div>
-                        {{ if and .ActiveGoal .Progress }}
-                        <span class="caption" style="border:1px solid var(--border); padding:2px 8px;">
-                            Manca {{.Progress.WeightToLose}} kg in {{.Progress.DaysRemaining}} giorni
-                        </span>
-                        {{ end }}
+                        <span id="goal-badge"
+                              hx-get="/users/{{.UserID}}/goal-badge"
+                              hx-trigger="load, weight-updated from:body, goal-updated from:body"></span>
                     </div>
                     <div>
                         <label for="periodSelect" class="caption" style="margin-right:6px;">Periodo</label>

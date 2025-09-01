@@ -456,6 +456,79 @@ func (h *Handlers) WeightFormHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GoalSummaryHandler returns the goal summary partial
+func (h *Handlers) GoalSummaryHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    userIDStr := vars["userID"]
+
+    userID, err := user.NewUserID(userIDStr)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+        return
+    }
+
+    type vm struct {
+        UserID        string
+        Active        bool
+        TargetWeight  string
+        Unit          string
+        TargetDate    string
+        HasProgress   bool
+        WeightToLose  string
+        DaysRemaining int
+    }
+
+    out := vm{UserID: userIDStr}
+    if g, _ := h.goalTracker.GetActiveGoal(userID); g != nil {
+        out.Active = true
+        out.TargetWeight = fmt.Sprintf("%.1f", g.TargetWeight().Float64())
+        out.Unit = g.Unit().String()
+        out.TargetDate = g.TargetDate().String()
+        if p, err := h.goalTracker.CalculateProgress(userID); err == nil {
+            out.HasProgress = true
+            out.WeightToLose = fmt.Sprintf("%.1f", p.WeightToLose.Float64())
+            out.DaysRemaining = p.DaysRemaining
+        }
+    }
+
+    if err := h.templates.ExecuteTemplate(w, "partials_goal_summary.html", out); err != nil {
+        writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
+        return
+    }
+}
+
+// GoalBadgeHandler returns just the small badge for the chart header
+func (h *Handlers) GoalBadgeHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    userIDStr := vars["userID"]
+    userID, err := user.NewUserID(userIDStr)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+        return
+    }
+
+    type vm struct {
+        Active        bool
+        HasProgress   bool
+        WeightToLose  string
+        DaysRemaining int
+    }
+    out := vm{}
+    if g, _ := h.goalTracker.GetActiveGoal(userID); g != nil {
+        out.Active = true
+        if p, err := h.goalTracker.CalculateProgress(userID); err == nil {
+            out.HasProgress = true
+            out.WeightToLose = fmt.Sprintf("%.1f", p.WeightToLose.Float64())
+            out.DaysRemaining = p.DaysRemaining
+        }
+    }
+
+    if err := h.templates.ExecuteTemplate(w, "partials_goal_badge.html", out); err != nil {
+        writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
+        return
+    }
+}
+
 // loadTemplates loads HTML templates from files
 func loadTemplates() *template.Template {
     tmpl := template.New("").Funcs(template.FuncMap{

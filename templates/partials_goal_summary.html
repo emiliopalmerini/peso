@@ -1,0 +1,20 @@
+<div class="list">
+  <div class="row"><strong>Obiettivo</strong></div>
+  {{if .Active}}
+    <div class="row"><div>Target</div><div>{{.TargetWeight}} {{.Unit}}</div></div>
+    <div class="row"><div>Scadenza</div><div>{{.TargetDate}}</div></div>
+    {{if .HasProgress}}
+      <div class="row"><div>Da perdere/guadagnare</div><div>{{.WeightToLose}} kg</div></div>
+      <div class="row"><div>Giorni rimanenti</div><div>{{.DaysRemaining}}</div></div>
+    {{end}}
+  {{else}}
+    <div class="row"><div class="caption">Nessun obiettivo attivo</div></div>
+    <div class="actions">
+      <button class="btn btn-primary"
+              hx-get="/users/{{.UserID}}/goal-form"
+              hx-target="#panel"
+              hx-swap="innerHTML">Imposta Obiettivo</button>
+    </div>
+  {{end}}
+</div>
+

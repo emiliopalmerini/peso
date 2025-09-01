@@ -1,5 +1,5 @@
 <h2 class="page__title">Imposta obiettivo</h2>
-<form class="form" hx-post="/api/goals" hx-target="#panel" hx-swap="innerHTML" hx-indicator=".indicator" hx-after-request="htmx.trigger('body','weight-updated')">
+<form class="form" hx-post="/api/goals" hx-target="#panel" hx-swap="innerHTML" hx-indicator=".indicator" hx-after-request="htmx.trigger('body','goal-updated')">
   <input type="hidden" name="user_id" value="{{.UserID}}">
 
   <div class="field">
