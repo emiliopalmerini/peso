@@ -29,10 +29,10 @@ COPY --from=builder /app/migrations ./migrations
 RUN mkdir -p /app/data
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8082
 
 # Set environment variables
-ENV PORT=8080
+ENV PORT=8082
 ENV DB_PATH=/app/data/peso.db
 
 # Health check

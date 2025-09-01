@@ -61,3 +61,38 @@ up: build run ## Build and run
 test-domain: ## Run domain tests only
 	@echo "Testing domain layer..."
 	go test -v ./internal/domain/...
+
+# --- Resets --------------------------------------------------------------
+.PHONY: reset-db reset-goals reset-weights
+
+reset-db: ## Remove local SQLite databases (peso.db and data/peso.db)
+	@echo "Resetting local databases..."
+	@rm -f peso.db peso.db-shm peso.db-wal || true
+	@rm -f data/peso.db data/peso.db-shm data/peso.db-wal || true
+	@echo "Done. Migrations will recreate schema on next start."
+
+reset-goals: ## Delete all goals (local peso.db and data/peso.db if present)
+	@command -v sqlite3 >/dev/null 2>&1 || { echo "sqlite3 not found. Please install sqlite3 or use 'make reset-db'"; exit 1; }
+	@set -e; \
+	DBS=""; \
+	[ -f peso.db ] && DBS="$$DBS peso.db"; \
+	[ -f data/peso.db ] && DBS="$$DBS data/peso.db"; \
+	if [ -z "$$DBS" ]; then echo "No local DB files found"; exit 0; fi; \
+	for f in $$DBS; do \
+		echo "Deleting goals in $$f"; \
+		sqlite3 "$$f" 'DELETE FROM goals;'; \
+	done; \
+	echo "Goals reset completed."
+
+reset-weights: ## Delete all weights (local peso.db and data/peso.db if present)
+	@command -v sqlite3 >/dev/null 2>&1 || { echo "sqlite3 not found. Please install sqlite3 or use 'make reset-db'"; exit 1; }
+	@set -e; \
+	DBS=""; \
+	[ -f peso.db ] && DBS="$$DBS peso.db"; \
+	[ -f data/peso.db ] && DBS="$$DBS data/peso.db"; \
+	if [ -z "$$DBS" ]; then echo "No local DB files found"; exit 0; fi; \
+	for f in $$DBS; do \
+		echo "Deleting weights in $$f"; \
+		sqlite3 "$$f" 'DELETE FROM weights;'; \
+	done; \
+	echo "Weights reset completed."
