@@ -32,10 +32,17 @@
                     {{end}}
                 {{else}}
                     <div class="row"><div class="caption">Nessun obiettivo attivo</div></div>
-                    <div class="actions"><button class="btn btn-primary">Imposta Obiettivo</button></div>
+                    <div class="actions">
+                        <button class="btn btn-primary" 
+                                hx-get="/users/{{.UserID}}/goal-form" 
+                                hx-target="#panel" 
+                                hx-swap="innerHTML">Imposta Obiettivo</button>
+                    </div>
                 {{end}}
             </div>
         </section>
+
+        <section class="page__section"><div id="panel"></div></section>
 
         <section class="page__section">
             <div class="chart">

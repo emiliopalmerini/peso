@@ -13,6 +13,7 @@ import (
     "peso/internal/application"
     "peso/internal/domain/user"
     "peso/internal/domain/weight"
+    "peso/internal/domain/goal"
     assets "peso"
 
     "github.com/gorilla/mux"
@@ -288,6 +289,110 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// GoalFormHandler serves the goal entry form
+func (h *Handlers) GoalFormHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    userIDStr := vars["userID"]
+
+    userID, err := user.NewUserID(userIDStr)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+        return
+    }
+
+    // Try to get current weight for helper text
+    latest, _ := h.weightTracker.GetLatestWeight(userID)
+    var current struct{
+        Value float64
+        Unit  string
+    }
+    if latest != nil {
+        current.Value = latest.Value().Float64()
+        current.Unit = latest.Unit().String()
+    }
+
+    data := struct {
+        UserID        string
+        Today         string
+        CurrentWeight *struct{ Value float64; Unit string }
+    }{
+        UserID:        userIDStr,
+        Today:         time.Now().Format("2006-01-02"),
+        CurrentWeight: func() *struct{ Value float64; Unit string } { if latest != nil { return &current }; return nil }(),
+    }
+
+    if err := h.templates.ExecuteTemplate(w, "goal_form.html", data); err != nil {
+        writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
+        return
+    }
+}
+
+// AddGoalHandler handles goal creation
+func (h *Handlers) AddGoalHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        writeError(h.logger, w, r, http.StatusMethodNotAllowed, "Method not allowed", nil)
+        return
+    }
+
+    userIDStr := r.FormValue("user_id")
+    goalType := r.FormValue("goal_type") // optional for now
+    targetWeightStr := r.FormValue("target_weight")
+    unitStr := r.FormValue("unit")
+    targetDateStr := r.FormValue("target_date")
+    notes := r.FormValue("notes")
+
+    if userIDStr == "" || targetWeightStr == "" || unitStr == "" || targetDateStr == "" {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Missing required fields", nil)
+        return
+    }
+
+    userID, err := user.NewUserID(userIDStr)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+        return
+    }
+
+    tw, err := strconv.ParseFloat(targetWeightStr, 64)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid target weight", err)
+        return
+    }
+    targetWeight, err := weight.NewWeightValue(tw)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid target weight", err)
+        return
+    }
+
+    unit, err := weight.NewWeightUnit(unitStr)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid unit", err)
+        return
+    }
+
+    // Parse target date (YYYY-MM-DD)
+    t, err := time.Parse("2006-01-02", targetDateStr)
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid target date", err)
+        return
+    }
+    td, err := goal.NewTargetDate(t.Year(), int(t.Month()), t.Day())
+    if err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Invalid target date", err)
+        return
+    }
+
+    // Optionally, enforce direction for goalType (not used by domain yet)
+    _ = goalType
+
+    if _, err := h.goalTracker.SetGoal(userID, targetWeight, unit, td, notes); err != nil {
+        writeError(h.logger, w, r, http.StatusBadRequest, "Failed to set goal", err)
+        return
+    }
+
+    // HTMX redirect to refresh dashboard with new goal
+    w.Header().Set("HX-Redirect", "/users/"+userIDStr)
+    w.WriteHeader(http.StatusNoContent)
+}
 // RecentWeightsHandler returns the HTML partial with recent weights list
 func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) {
     vars := mux.Vars(r)

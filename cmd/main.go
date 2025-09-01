@@ -88,13 +88,15 @@ func setupRouter(weightTracker *application.WeightTracker, goalTracker *applicat
     r.HandleFunc("/", handlers.HomeHandler).Methods("GET")
     r.HandleFunc("/users/{userID}", handlers.UserDashboardHandler).Methods("GET")
     r.HandleFunc("/users/{userID}/recent-weights", handlers.RecentWeightsHandler).Methods("GET")
-	r.HandleFunc("/users/{userID}/weight-form", handlers.WeightFormHandler).Methods("GET")
+    r.HandleFunc("/users/{userID}/weight-form", handlers.WeightFormHandler).Methods("GET")
+    r.HandleFunc("/users/{userID}/goal-form", handlers.GoalFormHandler).Methods("GET")
 
 	// API endpoints
     api := r.PathPrefix("/api").Subrouter()
     api.HandleFunc("/weights", handlers.AddWeightHandler).Methods("POST")
     api.HandleFunc("/weights/{userID}", handlers.WeightHistoryHandler).Methods("GET")
     api.HandleFunc("/weights/latest/{userID}", handlers.WeightLatestHandler).Methods("GET")
+    api.HandleFunc("/goals", handlers.AddGoalHandler).Methods("POST")
 
 	return r
 }
