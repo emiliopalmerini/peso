@@ -1,64 +1,196 @@
 <canvas id="weightChart" style="height:100%; width:100%;"></canvas>
-
 <script>
-  (function() {
-    const points = {{ toJson .Points }};
-    const labels = points.map(p => new Date(p.X));
-    const values = points.map(p => p.Y);
-
-    const ctx = document.getElementById('weightChart').getContext('2d');
-
-    if (!points.length) {
-      ctx.font = '16px Arial';
-      ctx.fillStyle = '#6B7280';
-      ctx.textAlign = 'center';
-      ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
-      return;
+(function () {
+  const points = {{ toJson .Points }}; // [{X: ISO8601, Y: number}, ...]
+  // Definisci il goal lato server. Supporta target o delta.
+  const goal = {{ if .Goal }}
+    {
+      start: "{{ .Goal.Start }}",          // "YYYY-MM-DD"
+      end: "{{ .Goal.End }}",              // "YYYY-MM-DD"
+      targetWeight: {{ .Goal.TargetWeight }}, // opzionale
+      kgToLose: {{ .Goal.KgToLose }}          // opzionale, positivo -> perdita
     }
+  {{ else }} null {{ end }};
 
-    const datasets = [{
-      label: 'Weight',
-      data: values,
-      borderColor: '#4F46E5',
-      backgroundColor: 'rgba(79, 70, 229, 0.1)',
-      borderWidth: 3,
-      fill: true,
-      tension: 0.4,
-      pointBackgroundColor: '#4F46E5',
-      pointBorderColor: '#ffffff',
-      pointBorderWidth: 2,
-      pointRadius: 4
-    }];
+  const ctx = document.getElementById('weightChart').getContext('2d');
+  if (!points.length) {
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#6B7280';
+    ctx.textAlign = 'center';
+    ctx.fillText('Nessun dato', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    return;
+  }
 
-    {{ if .GoalTarget }}
+  // --- Helpers ---
+  const dOnly = (d) => new Date(new Date(d).toISOString().slice(0,10));
+  const iso = (d) => new Date(d).toISOString().slice(0,10);
+  const it = (d) => new Date(d).toLocaleDateString();
+  const ddmmyyyy = (d) => {
+    const date = new Date(d);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Media per giorno
+  const byDay = points.reduce((m,p) => {
+    const k = iso(p.X);
+    (m[k] ||= []).push(p.Y);
+    return m;
+  }, {});
+  const days = Object.keys(byDay).sort(); // ISO asc
+  const daily = days.map(k => ({
+    iso: k,
+    date: it(k),
+    avg: byDay[k].reduce((a,b)=>a+b,0) / byDay[k].length
+  }));
+
+  // Media recente (ultimi 7 giorni disponibili)
+  const recentN = 7;
+  const tail = daily.slice(-recentN);
+  const baseline = tail.length
+    ? tail.reduce((a,p)=>a+p.avg,0)/tail.length
+    : daily[daily.length-1].avg;
+
+  // Target finale
+  let targetWeight = null;
+  if (goal) {
+    if (Number.isFinite(goal.targetWeight)) targetWeight = goal.targetWeight;
+    else if (Number.isFinite(goal.kgToLose)) targetWeight = +(baseline - Math.abs(goal.kgToLose)).toFixed(1);
+  }
+
+  // Costruisci traiettoria sui giorni etichettati
+  const labelsIso = daily.map(p => p.iso);
+  const labels = labelsIso; // Usa ISO per ordinamento corretto
+
+  function buildTrajectory(labelsIso, goal, baseline, target) {
+    if (!goal || !baseline || !Number.isFinite(target)) return Array(labelsIso.length).fill(null);
+    const start = dOnly(goal.start);
+    const end   = dOnly(goal.end);
+    if (isNaN(start) || isNaN(end) || end <= start) return Array(labelsIso.length).fill(null);
+
+    const totalDays = Math.round((end - start) / 86400000);
+    if (totalDays <= 0) return Array(labelsIso.length).fill(null);
+
+    // Se il goal parte nel passato, ipotizza progressione lineare dalla data di start
+    return labelsIso.map(s => {
+      const cur = dOnly(s);
+      if (cur < start || cur > end) return null;
+      const dFromStart = Math.round((cur - start) / 86400000);
+      const val = baseline + (target - baseline) * (dFromStart / totalDays);
+      return +val.toFixed(1);
+    });
+  }
+
+  const trajectory = buildTrajectory(labelsIso, goal, baseline, targetWeight);
+
+  // Dataset misurazioni puntuali
+  const rawPoints = points
+    .sort((a,b)=> new Date(a.X) - new Date(b.X))
+    .map(p => ({ x: iso(p.X), y: p.Y }));
+
+  const datasets = [
+    {
+      type: 'scatter',
+      label: 'Misurazioni',
+      data: rawPoints,
+      parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+      showLine: false,
+      pointRadius: 3,
+      pointHoverRadius: 4,
+      pointBorderWidth: 0,
+      pointBackgroundColor: 'rgb(17,17,17)'
+    },
+    {
+      type: 'line',
+      label: 'Media giornaliera',
+      data: daily.map(p => p.avg),
+      borderColor: 'rgb(17,17,17)',
+      backgroundColor: 'rgba(17,17,17,0.06)',
+      tension: 0.2,
+      pointRadius: 0,
+      fill: true
+    }
+  ];
+
+  // Linea target finale costante opzionale
+  if (Number.isFinite(targetWeight)) {
     datasets.push({
-      label: 'Goal',
-      data: Array(values.length).fill({{ .GoalTarget }}),
-      borderColor: '#10B981',
+      type: 'line',
+      label: 'Target finale',
+      data: Array(labels.length).fill(targetWeight),
+      borderColor: '#cbd5e1',            // grigio chiaro
       backgroundColor: 'transparent',
-      borderWidth: 2,
-      borderDash: [5, 5],
+      borderWidth: 1,
+      borderDash: [4,4],
       pointRadius: 0
     });
-    {{ end }}
+  }
 
-    new Chart(ctx, {
+  // Traiettoria giornaliera verso il target nel periodo del goal
+  if (trajectory.some(v => v !== null)) {
+    datasets.push({
       type: 'line',
-      data: {
-        labels: labels.map(d => d.toLocaleDateString()),
-        datasets: datasets
+      label: 'Traiettoria goal',
+      data: trajectory,
+      borderColor: '#d1d5db',           // grigio chiaro
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderDash: [6,6],
+      spanGaps: true,
+      pointRadius: 0
+    });
+  }
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              const label = items[0]?.label || '';
+              // Converti ISO date in formato dd-mm-yyyy per tooltip
+              try {
+                return ddmmyyyy(label);
+              } catch (e) {
+                return label;
+              }
+            },
+            label: (ctx) => {
+              if (ctx.dataset.label === 'Misurazioni') return `${ctx.formattedValue} kg`;
+              return `${ctx.dataset.label}: ${ctx.formattedValue} kg`;
+            }
+          }
+        }
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top' }
-        },
-        scales: {
-          y: { beginAtZero: false },
-          x: { grid: { display: false } }
+      scales: {
+        y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
+        x: { 
+          grid: { display: false },
+          ticks: {
+            callback: function(value, index, values) {
+              // Converti ISO date in formato dd-mm-yyyy per l'asse X
+              try {
+                const label = this.getLabelForValue(value);
+                return ddmmyyyy(label);
+              } catch (e) {
+                return this.getLabelForValue(value);
+              }
+            }
+          }
         }
       }
-    });
-  })();
+    }
+  });
+})();
 </script>
+

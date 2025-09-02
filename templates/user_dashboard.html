@@ -18,8 +18,6 @@
     <main class="container page">
         <h1 class="page__title">Dashboard {{.UserID | title}}</h1>
 
-        <!-- Actions (Registra) moved after chart -->
-
         <section class="page__section">
             <div id="goal-summary"
                  hx-get="/users/{{.UserID}}/goal-summary"

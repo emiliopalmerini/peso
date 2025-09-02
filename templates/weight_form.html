@@ -1,4 +1,8 @@
-<form class="form" hx-post="/api/weights" hx-target="#weight-form" hx-swap="none" hx-after-request="htmx.trigger('body','weight-updated'); this.closest('#weight-form').innerHTML=''">
+<form class="form"
+      hx-post="/api/weights"
+      hx-target="this"
+      hx-swap="none"
+      hx-on="htmx:afterRequest: if(event.detail.xhr.status === 200) window.location.reload()">
   <input type="hidden" name="user_id" value="{{.UserID}}">
 
   <div class="field">
@@ -14,7 +18,7 @@
 
   <div class="field">
     <label>Data</label>
-    <input type="date" name="date" value="{{.Today}}" required>
+    <input type="text" name="date" value="{{.Today}}" required pattern="\d{2}-\d{2}-\d{4}" placeholder="dd-mm-yyyy">
   </div>
 
   <div class="field">
@@ -27,3 +31,4 @@
     <button type="button" class="btn" onclick="this.closest('form').outerHTML=''">Annulla</button>
   </div>
 </form>
+
