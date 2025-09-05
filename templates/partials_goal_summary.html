@@ -9,12 +9,20 @@
     {{end}}
   {{else}}
     <div class="row"><div class="caption">Nessun obiettivo attivo</div></div>
-    <div class="actions">
-      <button class="btn btn-primary"
-              hx-get="/users/{{.UserID}}/goal-form"
-              hx-target="#panel"
-              hx-swap="innerHTML">Imposta Obiettivo</button>
-    </div>
+    {{if .HasWeights}}
+      <div class="actions">
+        <button class="btn btn-primary"
+                hx-get="/users/{{.UserID}}/goal-form"
+                hx-target="#panel"
+                hx-swap="innerHTML">Imposta Obiettivo</button>
+      </div>
+    {{else}}
+      <div class="row">
+        <div class="caption" style="color: #666; font-style: italic;">
+          Per impostare un obiettivo devi prima registrare almeno un peso
+        </div>
+      </div>
+    {{end}}
   {{end}}
 </div>
 

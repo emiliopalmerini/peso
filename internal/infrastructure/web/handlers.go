@@ -380,7 +380,7 @@ func (h *Handlers) AddGoalHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse target date (YYYY-MM-DD)
-	t, err := time.Parse("02-01-2006", targetDateStr)
+	t, err := time.Parse("2006-01-02", targetDateStr)
 	if err != nil {
 		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid target date", err)
 		return
@@ -399,9 +399,9 @@ func (h *Handlers) AddGoalHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// HTMX redirect to refresh dashboard with new goal
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = h.templates.ExecuteTemplate(w, "partials_success.html", struct{ Message string }{Message: "Obiettivo impostato con successo"})
+	// Return simple success response for HTMX
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
 
 // RecentWeightsHandler returns the HTML partial with recent weights list
@@ -478,6 +478,12 @@ func (h *Handlers) GoalSummaryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user has any weight records
+	hasWeights := false
+	if _, err := h.weightTracker.GetLatestWeight(userID); err == nil {
+		hasWeights = true
+	}
+
 	type vm struct {
 		UserID        string
 		Active        bool
@@ -487,9 +493,10 @@ func (h *Handlers) GoalSummaryHandler(w http.ResponseWriter, r *http.Request) {
 		HasProgress   bool
 		WeightToLose  string
 		DaysRemaining int
+		HasWeights    bool
 	}
 
-	out := vm{UserID: userIDStr}
+	out := vm{UserID: userIDStr, HasWeights: hasWeights}
 	if g, _ := h.goalTracker.GetActiveGoal(userID); g != nil {
 		out.Active = true
 		out.TargetWeight = fmt.Sprintf("%.1f", g.TargetWeight().Float64())
