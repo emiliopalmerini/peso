@@ -110,54 +110,90 @@
             console.log('buildPlanPoints called with:', goalInfo);
             if (!goalInfo || !goalInfo.createdAt || goalInfo.startWeight === undefined) {
                 console.log('Missing goal data, returning empty array');
-                return [];
+                return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
             }
             const start = itToDate(goalInfo.createdAt);
             const target = itToDate(goalInfo.targetDate);
             console.log('Dates:', {start, target});
             if (isNaN(start) || isNaN(target) || target <= start) {
                 console.log('Invalid dates, returning empty array');
-                return [];
+                return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
             }
             
             const targetWeight = parseFloat(goalInfo.targetWeight);
             const startWeight = goalInfo.startWeight;
             
             if (chartLabels.length === 0) {
-                return [];
+                return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
             }
             
-            let points = [];
+            let centerLine = [];
             const firstChartDate = itToDate(chartLabels[0]);
             const lastChartDate = itToDate(chartLabels[chartLabels.length - 1]);
             
             // Calculate the theoretical line from goal creation to target
             const totalDays = (target - start) / (1000 * 60 * 60 * 24);
             
+            // Calculate tolerance zone (±0.5kg or ±5% of total weight change)
+            const totalWeightChange = Math.abs(targetWeight - startWeight);
+            const tolerance = Math.max(0.5, totalWeightChange * 0.05);
+            
             // Start point: either at goal creation date or at chart boundary
             if (start >= firstChartDate && start <= lastChartDate) {
                 // Goal creation is within chart range, start from there
-                points.push({ x: goalInfo.createdAt, y: startWeight });
+                centerLine.push({ x: goalInfo.createdAt, y: startWeight });
             } else if (start < firstChartDate) {
                 // Goal creation is before chart, calculate weight at first chart date
                 const daysToFirstChart = (firstChartDate - start) / (1000 * 60 * 60 * 24);
                 const weightAtFirstChart = startWeight + ((targetWeight - startWeight) * daysToFirstChart / totalDays);
-                points.push({ x: chartLabels[0], y: weightAtFirstChart });
+                centerLine.push({ x: chartLabels[0], y: weightAtFirstChart });
             }
             
             // End point: only add if target date is within reasonable chart range
             if (target <= lastChartDate || (target - lastChartDate) / (1000 * 60 * 60 * 24) <= 30) {
                 // Target is within chart or max 30 days after last data point
-                points.push({ x: goalInfo.targetDate, y: targetWeight });
+                centerLine.push({ x: goalInfo.targetDate, y: targetWeight });
             } else {
                 // Target is too far, extend line to last chart date
                 const daysToLastChart = (lastChartDate - start) / (1000 * 60 * 60 * 24);
                 const weightAtLastChart = startWeight + ((targetWeight - startWeight) * daysToLastChart / totalDays);
-                points.push({ x: chartLabels[chartLabels.length - 1], y: weightAtLastChart });
+                centerLine.push({ x: chartLabels[chartLabels.length - 1], y: weightAtLastChart });
             }
             
-            console.log('Plan points:', points);
-            return points;
+            // Create upper and lower bounds for the tolerance zone
+            const upperBound = centerLine.map(point => ({
+                x: point.x,
+                y: point.y + tolerance
+            }));
+            
+            const lowerBound = centerLine.map(point => ({
+                x: point.x,
+                y: point.y - tolerance
+            }));
+            
+            // Determine if user is on track based on recent weight data
+            let colors = { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' }; // Default gray
+            
+            if (averaged.length > 0) {
+                const latestWeight = averaged[averaged.length - 1].value;
+                const latestDate = itToDate(averaged[averaged.length - 1].date);
+                
+                // Calculate expected weight at latest date
+                const daysSinceStart = (latestDate - start) / (1000 * 60 * 60 * 24);
+                const expectedWeight = startWeight + ((targetWeight - startWeight) * daysSinceStart / totalDays);
+                const deviation = Math.abs(latestWeight - expectedWeight);
+                
+                if (deviation <= tolerance) {
+                    // On track - blue zone
+                    colors = { zone: 'rgba(59, 130, 246, 0.1)', line: 'rgb(59, 130, 246)' };
+                } else {
+                    // Off track - red zone  
+                    colors = { zone: 'rgba(239, 68, 68, 0.1)', line: 'rgb(239, 68, 68)' };
+                }
+            }
+            
+            console.log('Plan data:', { centerLine, upperBound, lowerBound, tolerance, colors });
+            return { centerLine, upperBound, lowerBound, colors };
         }
 
         function todayIt() {
@@ -190,8 +226,8 @@
                 const yMax = maxWeight + padding;
 
                 // trajectory from goal creation date towards target using starting weight
-                const planPoints = goal ? buildPlanPoints(goal, labels, averaged) : [];
-                console.log('Plan points for chart:', planPoints);
+                const planData = goal ? buildPlanPoints(goal, labels, averaged) : { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
+                console.log('Plan data for chart:', planData);
 
                 const config = {
                     type: 'line',
@@ -224,10 +260,24 @@
                             },
                             {
                                 type: 'line',
-                                label: 'Traiettoria ideale',
-                                data: planPoints,
+                                label: 'Zona successo',
+                                data: planData.upperBound.concat([...planData.lowerBound].reverse()),
                                 parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                                borderColor: 'rgba(0,0,0,0.2)',
+                                borderColor: 'transparent',
+                                backgroundColor: planData.colors.zone,
+                                borderWidth: 0,
+                                pointRadius: 0,
+                                showLine: true,
+                                fill: true,
+                                xAxisID: 'x',
+                                yAxisID: 'y'
+                            },
+                            {
+                                type: 'line',
+                                label: 'Traiettoria ideale',
+                                data: planData.centerLine,
+                                parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+                                borderColor: planData.colors.line,
                                 backgroundColor: 'transparent',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
@@ -272,15 +322,39 @@
                     chart.data.labels = labels;
                     chart.data.datasets[0].data = rawPoints;
                     chart.data.datasets[1].data = avgValues;
+                    
+                    // Update or add success zone
                     if (chart.data.datasets[2]) {
-                        chart.data.datasets[2].data = planPoints;
+                        chart.data.datasets[2].data = planData.upperBound.concat([...planData.lowerBound].reverse());
+                        chart.data.datasets[2].backgroundColor = planData.colors.zone;
+                    } else {
+                        chart.data.datasets.push({
+                            type: 'line',
+                            label: 'Zona successo',
+                            data: planData.upperBound.concat([...planData.lowerBound].reverse()),
+                            parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+                            borderColor: 'transparent',
+                            backgroundColor: planData.colors.zone,
+                            borderWidth: 0,
+                            pointRadius: 0,
+                            showLine: true,
+                            fill: true,
+                            xAxisID: 'x',
+                            yAxisID: 'y'
+                        });
+                    }
+                    
+                    // Update or add ideal trajectory
+                    if (chart.data.datasets[3]) {
+                        chart.data.datasets[3].data = planData.centerLine;
+                        chart.data.datasets[3].borderColor = planData.colors.line;
                     } else {
                         chart.data.datasets.push({
                             type: 'line',
                             label: 'Traiettoria ideale',
-                            data: planPoints,
+                            data: planData.centerLine,
                             parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                            borderColor: 'rgba(0,0,0,0.2)',
+                            borderColor: planData.colors.line,
                             backgroundColor: 'transparent',
                             borderWidth: 2,
                             borderDash: [5, 5],
@@ -290,6 +364,7 @@
                             yAxisID: 'y'
                         });
                     }
+                    
                     chart.options.scales.y.min = yMin;
                     chart.options.scales.y.max = yMax;
                     chart.update();
