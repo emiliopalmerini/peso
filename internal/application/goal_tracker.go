@@ -119,6 +119,40 @@ func (gt *GoalTracker) GetActiveGoal(userID user.UserID) (*goal.Goal, error) {
 	return activeGoal, nil
 }
 
+// GetStartingWeightForGoal gets the weight closest to when the goal was created
+func (gt *GoalTracker) GetStartingWeightForGoal(userID user.UserID, goalCreatedAt time.Time) (*weight.Weight, error) {
+	// Look for weights around the goal creation date (±7 days)
+	from := goalCreatedAt.AddDate(0, 0, -7)
+	to := goalCreatedAt.AddDate(0, 0, 7)
+	
+	weights, err := gt.weightRepo.FindByUserIDAndPeriod(userID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	
+	if len(weights) == 0 {
+		// Fallback to latest weight before goal creation
+		return gt.weightRepo.FindLatestByUserID(userID)
+	}
+	
+	// Find the weight closest to goal creation date
+	var closest *weight.Weight
+	minDiff := time.Duration(math.MaxInt64)
+	
+	for _, w := range weights {
+		diff := w.MeasuredAt().Sub(goalCreatedAt)
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff < minDiff {
+			minDiff = diff
+			closest = w
+		}
+	}
+	
+	return closest, nil
+}
+
 // CalculateProgress calculates progress towards the user's active goal
 func (gt *GoalTracker) CalculateProgress(userID user.UserID) (GoalProgress, error) {
 	// Get active goal

@@ -114,7 +114,7 @@ func TestTargetDate_String(t *testing.T) {
 	targetDate, err := NewTargetDate(2030, 6, 15)
 	assert.NoError(t, err)
 	
-	assert.Equal(t, "2030-06-15", targetDate.String())
+	assert.Equal(t, "15/06/2030", targetDate.String())
 }
 
 func TestTargetDate_IsZero(t *testing.T) {

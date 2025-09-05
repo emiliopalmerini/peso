@@ -73,56 +73,99 @@
     </main>
 
     <script>
+        console.log('Script starting...');
         let chart;
         const ctx = document.getElementById('weightChart').getContext('2d');
-        const goal = {{ if .ActiveGoal }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}" } {{ else }} null {{ end }};
+        const goal = {{ if .ActiveGoal }}{{ if and .CreatedAt .StartWeight }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}", createdAt: "{{.CreatedAt}}", startWeight: {{.StartWeight}} }{{ else }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}" }{{ end }}{{ else }} null {{ end }};
+        console.log('Goal data:', goal);
 
-        function isoToIt(iso) {
-            // iso 'YYYY-MM-DD' -> 'DD/MM/YYYY'
-            const [y,m,d] = iso.split('-');
-            return `${d}/${m}/${y}`;
+        function itToDate(itDate) {
+            // 'DD/MM/YYYY' -> Date object
+            const [d,m,y] = itDate.split('/');
+            return new Date(y, m-1, d); // month is 0-indexed in Date constructor
         }
 
         function aggregateDailyAverage(data) {
             const groups = new Map();
             for (const w of data) {
-                const d = w.date; // already YYYY-MM-DD
+                const d = w.date; // already DD/MM/YYYY
                 if (!groups.has(d)) groups.set(d, []);
                 groups.get(d).push(w.value);
             }
-            const dates = Array.from(groups.keys()).sort();
+            const dates = Array.from(groups.keys()).sort((a, b) => {
+                // Sort DD/MM/YYYY dates chronologically
+                const dateA = itToDate(a);
+                const dateB = itToDate(b);
+                return dateA - dateB;
+            });
             const averaged = dates.map(d => {
                 const vals = groups.get(d);
                 const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
-                return { iso: d, date: isoToIt(d), value: avg };
+                return { date: d, value: avg };
             });
             return averaged;
         }
 
-        function buildPlanValues(labelsIso, latestIso, latestValue, goalInfo) {
-            if (!goalInfo || !latestIso) return Array(labelsIso.length).fill(null);
-            const start = new Date(latestIso);
-            const target = new Date(goalInfo.targetDate);
-            if (isNaN(start) || isNaN(target) || target <= start) {
-                return Array(labelsIso.length).fill(null);
+        function buildPlanPoints(goalInfo, chartLabels, averaged) {
+            console.log('buildPlanPoints called with:', goalInfo);
+            if (!goalInfo || !goalInfo.createdAt || goalInfo.startWeight === undefined) {
+                console.log('Missing goal data, returning empty array');
+                return [];
             }
-            const totalDays = Math.round((target - start) / 86400000);
-            if (totalDays <= 0) return Array(labelsIso.length).fill(null);
-            const delta = (goalInfo.targetWeight - latestValue) / totalDays;
-            return labelsIso.map(iso => {
-                const d = new Date(iso);
-                if (d < start || d > target) return null;
-                const daysFromStart = Math.round((d - start) / 86400000);
-                return +(latestValue + delta * daysFromStart).toFixed(1);
-            });
+            const start = itToDate(goalInfo.createdAt);
+            const target = itToDate(goalInfo.targetDate);
+            console.log('Dates:', {start, target});
+            if (isNaN(start) || isNaN(target) || target <= start) {
+                console.log('Invalid dates, returning empty array');
+                return [];
+            }
+            
+            const targetWeight = parseFloat(goalInfo.targetWeight);
+            const startWeight = goalInfo.startWeight;
+            
+            if (chartLabels.length === 0) {
+                return [];
+            }
+            
+            let points = [];
+            const firstChartDate = itToDate(chartLabels[0]);
+            const lastChartDate = itToDate(chartLabels[chartLabels.length - 1]);
+            
+            // Calculate the theoretical line from goal creation to target
+            const totalDays = (target - start) / (1000 * 60 * 60 * 24);
+            
+            // Start point: either at goal creation date or at chart boundary
+            if (start >= firstChartDate && start <= lastChartDate) {
+                // Goal creation is within chart range, start from there
+                points.push({ x: goalInfo.createdAt, y: startWeight });
+            } else if (start < firstChartDate) {
+                // Goal creation is before chart, calculate weight at first chart date
+                const daysToFirstChart = (firstChartDate - start) / (1000 * 60 * 60 * 24);
+                const weightAtFirstChart = startWeight + ((targetWeight - startWeight) * daysToFirstChart / totalDays);
+                points.push({ x: chartLabels[0], y: weightAtFirstChart });
+            }
+            
+            // End point: only add if target date is within reasonable chart range
+            if (target <= lastChartDate || (target - lastChartDate) / (1000 * 60 * 60 * 24) <= 30) {
+                // Target is within chart or max 30 days after last data point
+                points.push({ x: goalInfo.targetDate, y: targetWeight });
+            } else {
+                // Target is too far, extend line to last chart date
+                const daysToLastChart = (lastChartDate - start) / (1000 * 60 * 60 * 24);
+                const weightAtLastChart = startWeight + ((targetWeight - startWeight) * daysToLastChart / totalDays);
+                points.push({ x: chartLabels[chartLabels.length - 1], y: weightAtLastChart });
+            }
+            
+            console.log('Plan points:', points);
+            return points;
         }
 
-        function isoToday() {
+        function todayIt() {
             const d = new Date();
-            const y = d.getFullYear();
-            const m = String(d.getMonth()+1).padStart(2,'0');
             const day = String(d.getDate()).padStart(2,'0');
-            return `${y}-${m}-${day}`;
+            const m = String(d.getMonth()+1).padStart(2,'0');
+            const y = d.getFullYear();
+            return `${day}/${m}/${y}`;
         }
 
         async function renderChart() {
@@ -135,14 +178,20 @@
                 ]);
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
-                const labelsIso = averaged.map(p => p.iso);
                 const avgValues = averaged.map(p => p.value);
-                const rawPoints = data.map(w => ({ x: isoToIt(w.date), y: w.value, t: w.time }));
+                const rawPoints = data.map(w => ({ x: w.date, y: w.value, t: w.time }));
 
-                // trajectory from today towards target using latest known value
-                const latestValue = latest && latest.value != null ? latest.value : (data.length ? data[data.length-1].value : null);
-                const latestIso = isoToday();
-                const planValues = (goal && latestValue != null) ? buildPlanValues(labelsIso, latestIso, latestValue, goal) : Array(labels.length).fill(null);
+                // Calculate Y axis limits based only on weight data (exclude goal line)
+                const allWeightValues = [...avgValues, ...rawPoints.map(p => p.y)];
+                const minWeight = Math.min(...allWeightValues);
+                const maxWeight = Math.max(...allWeightValues);
+                const padding = (maxWeight - minWeight) * 0.1 || 1; // 10% padding or minimum 1kg
+                const yMin = Math.max(0, minWeight - padding);
+                const yMax = maxWeight + padding;
+
+                // trajectory from goal creation date towards target using starting weight
+                const planPoints = goal ? buildPlanPoints(goal, labels, averaged) : [];
+                console.log('Plan points for chart:', planPoints);
 
                 const config = {
                     type: 'line',
@@ -175,14 +224,17 @@
                             },
                             {
                                 type: 'line',
-                                label: 'Traiettoria obiettivo',
-                                data: planValues,
-                                borderColor: 'rgba(0,0,0,0.35)',
+                                label: 'Traiettoria ideale',
+                                data: planPoints,
+                                parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+                                borderColor: 'rgba(0,0,0,0.2)',
                                 backgroundColor: 'transparent',
-                                borderWidth: 1,
-                                borderDash: [6, 6],
+                                borderWidth: 2,
+                                borderDash: [5, 5],
                                 pointRadius: 0,
-                                spanGaps: true
+                                showLine: true,
+                                xAxisID: 'x',
+                                yAxisID: 'y'
                             }
                         ]
                     },
@@ -205,7 +257,12 @@
                             }
                         },
                         scales: {
-                            y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.06)' } },
+                            y: { 
+                                beginAtZero: false, 
+                                grid: { color: 'rgba(0,0,0,0.06)' },
+                                min: yMin,
+                                max: yMax
+                            },
                             x: { grid: { display: false } }
                         }
                     }
@@ -216,20 +273,25 @@
                     chart.data.datasets[0].data = rawPoints;
                     chart.data.datasets[1].data = avgValues;
                     if (chart.data.datasets[2]) {
-                        chart.data.datasets[2].data = planValues;
+                        chart.data.datasets[2].data = planPoints;
                     } else {
                         chart.data.datasets.push({
                             type: 'line',
-                            label: 'Traiettoria obiettivo',
-                            data: planValues,
-                            borderColor: 'rgba(0,0,0,0.35)',
+                            label: 'Traiettoria ideale',
+                            data: planPoints,
+                            parsing: { xAxisKey: 'x', yAxisKey: 'y' },
+                            borderColor: 'rgba(0,0,0,0.2)',
                             backgroundColor: 'transparent',
-                            borderWidth: 1,
-                            borderDash: [6, 6],
+                            borderWidth: 2,
+                            borderDash: [5, 5],
                             pointRadius: 0,
-                            spanGaps: true
+                            showLine: true,
+                            xAxisID: 'x',
+                            yAxisID: 'y'
                         });
                     }
+                    chart.options.scales.y.min = yMin;
+                    chart.options.scales.y.max = yMax;
                     chart.update();
                 } else {
                     chart = new Chart(ctx, config);

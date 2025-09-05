@@ -83,7 +83,7 @@ func (td TargetDate) ToTime() time.Time {
 }
 
 func (td TargetDate) String() string {
-	return fmt.Sprintf("%04d-%02d-%02d", td.year, td.month, td.day)
+	return fmt.Sprintf("%02d/%02d/%04d", td.day, td.month, td.year)
 }
 
 func (td TargetDate) IsZero() bool {

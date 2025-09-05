@@ -86,7 +86,7 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 		measuredAt = time.Now()
 	} else {
 		// Parse provided date in local timezone
-		d, err2 := time.ParseInLocation("02-01-2006", dateStr, time.Local)
+		d, err2 := time.ParseInLocation("02/01/2006", dateStr, time.Local)
 		if err2 != nil {
 			writeError(h.logger, w, r, http.StatusBadRequest, "Invalid date format", err2)
 			return
@@ -144,7 +144,7 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 			ID:    recordedWeight.ID().String(),
 			Value: recordedWeight.Value().Float64(),
 			Unit:  recordedWeight.Unit().String(),
-			Date:  recordedWeight.MeasuredAt().Format("02-01-2006"),
+			Date:  recordedWeight.MeasuredAt().Format("02/01/2006"),
 		},
 	}
 
@@ -203,7 +203,7 @@ func (h *Handlers) WeightHistoryHandler(w http.ResponseWriter, r *http.Request) 
 			ID:    w.ID().String(),
 			Value: w.Value().Float64(),
 			Unit:  w.Unit().String(),
-			Date:  w.MeasuredAt().Format("02-01-2006"),
+			Date:  w.MeasuredAt().Format("02/01/2006"),
 			Time:  w.MeasuredAt().Format("15:04"),
 			Notes: w.Notes(),
 		})
@@ -241,7 +241,7 @@ func (h *Handlers) WeightLatestHandler(w http.ResponseWriter, r *http.Request) {
 		ID:    latest.ID().String(),
 		Value: latest.Value().Float64(),
 		Unit:  latest.Unit().String(),
-		Date:  latest.MeasuredAt().Format("02-01-2006"), Time: latest.MeasuredAt().Format("15:04"),
+		Date:  latest.MeasuredAt().Format("02/01/2006"), Time: latest.MeasuredAt().Format("15:04"),
 		Notes: latest.Notes(),
 	}
 
@@ -265,21 +265,33 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Calculate goal progress if goal exists
 	var progress *application.GoalProgress
+	var startWeight interface{}
+	var createdAt interface{}
 	if activeGoal != nil {
 		p, err := h.goalTracker.CalculateProgress(userID)
 		if err == nil {
 			progress = &p
 		}
+		
+		// Get starting weight for trajectory calculation
+		if startWeightRecord, err := h.goalTracker.GetStartingWeightForGoal(userID, activeGoal.CreatedAt()); err == nil {
+			startWeight = startWeightRecord.Value().Float64()
+		}
+		createdAt = activeGoal.CreatedAt().Format("02/01/2006")
 	}
 
 	data := struct {
-		UserID     string
-		ActiveGoal interface{}
-		Progress   *application.GoalProgress
+		UserID      string
+		ActiveGoal  interface{}
+		Progress    *application.GoalProgress
+		StartWeight interface{}
+		CreatedAt   interface{}
 	}{
-		UserID:     userIDStr,
-		ActiveGoal: activeGoal,
-		Progress:   progress,
+		UserID:      userIDStr,
+		ActiveGoal:  activeGoal,
+		Progress:    progress,
+		StartWeight: startWeight,
+		CreatedAt:   createdAt,
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "user_dashboard.html", data); err != nil {
@@ -319,7 +331,7 @@ func (h *Handlers) GoalFormHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}{
 		UserID: userIDStr,
-		Today:  time.Now().Format("02-01-2006"),
+		Today:  time.Now().Format("02/01/2006"),
 		CurrentWeight: func() *struct {
 			Value float64
 			Unit  string
@@ -431,7 +443,7 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 	var rows []Row
 	for _, wgt := range weights {
 		rows = append(rows, Row{
-			Date:  wgt.MeasuredAt().Format("02-01-2006"),
+			Date:  wgt.MeasuredAt().Format("02/01/2006"),
 			Value: fmt.Sprintf("%.1f", wgt.Value().Float64()),
 			Unit:  wgt.Unit().String(),
 			Notes: wgt.Notes(),
@@ -458,7 +470,7 @@ func (h *Handlers) WeightFormHandler(w http.ResponseWriter, r *http.Request) {
 		Today  string
 	}{
 		UserID: userIDStr,
-		Today:  time.Now().Format("02-01-2006"),
+		Today:  time.Now().Format("02/01/2006"),
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "weight_form.html", data); err != nil {
