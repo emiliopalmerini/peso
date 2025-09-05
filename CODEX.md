@@ -1,3 +1,7 @@
+# CODEX.md
+
+This file provides guidance to GitHub Copilot and other AI coding assistants when working with code in this repository.
+
 # Repository Guidelines
 
 ## Project Structure & Module Organization
@@ -9,18 +13,16 @@ peso/
 ├── internal/
 │   ├── domain/                 # Business logic e entità di dominio
 │   │   ├── user/              # Entità User e logica correlata
-│   │   └── weight/            # Entità Weight e logica correlata
+│   │   ├── weight/            # Entità Weight e logica correlata
+│   │   └── goal/              # Entità Goal e logica correlata
 │   ├── infrastructure/        # Implementazioni concrete (database, web)
 │   │   ├── persistence/       # Repository SQLite
 │   │   └── web/              # Handler HTMX e routing
 │   ├── application/           # Use cases e servizi applicativi
 │   └── interfaces/            # Port interfaces per hexagonal architecture
-├── web/
-│   ├── static/               # CSS, JS, immagini
-│   └── templates/           # Template HTML/HTMX
-├── migrations/              # Script SQL per database
-└── docs/
-    └── adrs/               # Architectural Decision Records
+├── templates/                  # Template HTML/HTMX (root level)
+├── web/static/                 # CSS, JS, immagini (embedded in assets.go)
+└── migrations/              # Script SQL per database
 ```
 
 ## Build, Test, and Development Commands
@@ -46,6 +48,17 @@ go fmt ./...
 
 # Tidy delle dipendenze
 go mod tidy
+
+# Makefile commands (alternative)
+make run          # Esegue in modalità sviluppo
+make build        # Compila il binario
+make test         # Esegue tutti i test
+make test-coverage # Test con coverage
+make test-domain   # Test solo del domain layer
+make lint          # Linting (golangci-lint o go fmt)
+make fmt           # Format del codice
+make clean         # Pulisce i file compilati
+make reset-db      # Resetta il database locale
 ```
 
 ## Coding Style & Naming Conventions
@@ -94,5 +107,15 @@ go mod tidy
 
 ## Architecture Overview
 
-La documentazione delle decisioni architetturali è disponibile in `docs/adr`.
-Indice ADR: [docs/adrs/README.md](./docs/adrs/README.md)
+Il progetto segue una architettura esagonale (Ports & Adapters) con Domain-Driven Design:
+
+- **Domain Layer** (`internal/domain/`): Entità di business (User, Weight, Goal) con value objects e business logic
+- **Application Layer** (`internal/application/`): Use cases e servizi applicativi (WeightTracker, GoalTracker) 
+- **Infrastructure Layer** (`internal/infrastructure/`): Implementazioni concrete per database (SQLite) e web (HTMX handlers)
+- **Interfaces** (`internal/interfaces/`): Port interfaces per hexagonal architecture
+
+Stack tecnologico:
+- Backend: Go 1.23+ con Gorilla Mux per routing
+- Frontend: HTMX per interazioni dinamiche, Chart.js per grafici
+- Database: SQLite con migrazioni in `/migrations`
+- Templates: HTML templates in `/templates` (embedded via assets.go)

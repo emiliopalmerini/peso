@@ -1,85 +1,75 @@
 # Peso - Weight Tracking App
 
-Applicazione web per il tracking del peso di Giada ed Emilio nel homelab.
-Un'app semplice ed efficace costruita con Go e HTMX per monitorare e visualizzare l'andamento del peso nel tempo, con supporto per obiettivi personalizzati.
+A simple and effective web application built with Go and HTMX for monitoring and visualizing weight progress over time, with support for personalized goals.
 
-## Funzionalità
+## Features
 
-- ⚖️ **Registrazione Peso**: Inserimento rapido delle misurazioni giornaliere
-- 📊 **Grafici Interattivi**: Visualizzazione dell'andamento temporale con Chart.js
-- 🎯 **Obiettivi Personali**: Impostazione di goal di peso con calcolo automatico dei progressi
-- 📈 **Analisi Trend**: Calcolo automatico di variazioni e statistiche
-- 👥 **Multi-Utente**: Tracking separato per Giada ed Emilio
-- 🏠 **Homelab Ready**: Ottimizzato per deployment domestico con Docker
+- **Weight Recording**: Quick daily measurement input
+- **Interactive Charts**: Temporal trend visualization with Chart.js
+- **Personal Goals**: Weight goal setting with automatic progress calculation
+- **Trend Analysis**: Automatic calculation of variations and statistics
+- **Multi-User**: Separate tracking for multiple users
+- **Homelab Ready**: Optimized for home deployment with Docker
 
-Stack: Go, HTMX, Chart.js, SQLite
+**Tech Stack**: Go, HTMX, Chart.js, SQLite
 
-## Requisiti
+## Prerequisites
 
 - Go 1.21+
 - SQLite3
-- Make (opzionale)
+- Make (optional)
 
-## Esecuzione locale
+## Quick Start
 
 ```bash
-# Clone del repository
+# Clone the repository
 git clone <repo-url>
 cd peso
 
-# Installazione dipendenze
+# Install dependencies
 go mod tidy
 
-# Esecuzione in modalità sviluppo
+# Run in development mode
 go run cmd/main.go
 
-# Oppure con Make
+# Or using Make
 make run
 ```
 
-L'applicazione sarà disponibile su http://localhost:8080
+The application will be available at http://localhost:8082
 
 
-## Variabili d'ambiente supportate
+## Configuration
 
-Vedi `.env.example` per i default. Principali:
+Environment variables (see `.env.example` for defaults):
 
-- `PORT`: Porta del server (default: 8080)
-- `DB_PATH`: Path del database SQLite (default: ./peso.db)
-- `LOG_LEVEL`: Livello di log (default: info)
+- `PORT`: Server port (default: 8082)
+- `DB_PATH`: SQLite database path (default: ./peso.db)
+- `LOG_LEVEL`: Log level (default: info)
 
-## Comandi Makefile utili
+## Development
 
-- `make run`: Esegue l'applicazione in modalità sviluppo
-- `make build`: Compila il binario
-- `make test`: Esegue tutti i test
-- `make clean`: Pulisce i file compilati
-- `make docker-build`: Costruisce l'immagine Docker
+### Available Make Commands
 
-## Docker
+- `make run`: Run application in development mode
+- `make build`: Compile binary
+- `make test`: Run all tests
+- `make clean`: Clean compiled files
+- `make docker-build`: Build Docker image
+
+## Docker Deployment
+
+### Building and Running
 
 ```bash
-# Build dell'immagine
+# Build the image
 docker build -t peso .
 
-# Run del container
-docker run -p 8080:8080 -v $(pwd)/data:/app/data peso
+# Run the container
+docker run -p 8082:8082 -v $(pwd)/data:/app/data peso
 ```
 
-## Health & Readiness
-
-- Health check: `GET /health`
-- Readiness check: `GET /ready`
-
-## Deploy
-
-Per il deployment nel homelab:
-
-1. Utilizzare docker-compose per il deployment
-2. Configurare reverse proxy (nginx/caddy) se necessario
-3. Backup periodico del database SQLite tramite volume
-
-Esempio docker-compose.yml:
+### Docker Compose
 
 ```yaml
 version: '3.8'
@@ -87,52 +77,63 @@ services:
   peso:
     build: .
     ports:
-      - "8080:8080"
+      - "8082:8082"
     volumes:
       - ./data:/app/data
     environment:
       - DB_PATH=/app/data/peso.db
+      - PORT=8082
     restart: unless-stopped
 ```
 
-## Commit message template (Conventional Commits)
+### Health Checks
 
-Usiamo lo standard Conventional Commits per messaggi chiari e automatizzabili.
+- Health check: `GET /health`
+- Readiness check: `GET /ready`
 
-Formato base:
+## Deployment Guide
 
+For homelab deployment:
+
+1. Use docker-compose for container orchestration
+2. Configure reverse proxy (nginx/caddy) if needed
+3. Setup periodic SQLite database backups via volumes
+4. Configure SSL certificates for HTTPS access
+
+## Contributing
+
+### Commit Message Convention
+
+This project follows [Conventional Commits](https://conventionalcommits.org/) for clear and automated commit messages.
+
+**Format**:
 ```
-<type>(<scope>)<!>: <subject>
+<type>(<scope>): <subject>
 
 <body>
 
 <footer>
 ```
 
-- type: tipo di cambiamento. Esempi comuni: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`.
-- scope: (opzionale) area toccata, es. `templates`, `encounters`, `router`.
-- !: (opzionale) indica breaking change.
-- subject: (obbligatorio) riassunto al presente, in minuscolo, senza punto finale.
-- body: (opzionale) contesto/motivazione, dettagli tecnici se utili.
-- footer: (opzionale) riferimenti a issue/PR o `BREAKING CHANGE:` con spiegazione.
+**Types**: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`
 
-Esempi:
-
-```
-fix(templates): allinea route HTMX a /encounters/*
-
-docs(readme): aggiungi template per Conventional Commits
+**Examples**:
+```bash
+feat(ui): add weight goal progress indicator
+fix(api): resolve database connection timeout
+docs(readme): update deployment instructions
 ```
 
-Note:
-- Imperativo presente nel subject (es. "aggiungi", "correggi").
-- Mantieni il subject entro ~72 caratteri quando possibile.
-- Un commit dovrebbe fare una cosa sola e bene.
+**Guidelines**:
+- Use imperative present tense in subject
+- Keep subject under 72 characters
+- One commit should do one thing well
+- Include scope when relevant (ui, api, db, etc.)
 
-## Pre-commit hook
+### Development Workflow
 
-## ADR (Architectural Decision Records)
-
-La documentazione delle decisioni architetturali è disponibile in `docs/adr`.
-Indice ADR: [docs/adrs/README.md](./docs/adrs/README.md)
+1. Create feature branch from `main`
+2. Make changes following conventional commits
+3. Run tests: `make test`
+4. Submit pull request
 
