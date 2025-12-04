@@ -2,8 +2,6 @@ package weight
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWeightValue_NewWeightValue(t *testing.T) {
@@ -53,11 +51,19 @@ func TestWeightValue_NewWeightValue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			weight, err := NewWeightValue(tt.value)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Equal(t, WeightValue(0), weight)
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				if weight != WeightValue(0) {
+					t.Errorf("expected zero weight but got %f", weight.Float64())
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.value, weight.Float64())
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if weight.Float64() != tt.value {
+					t.Errorf("expected %f but got %f", tt.value, weight.Float64())
+				}
 			}
 		})
 	}
@@ -65,45 +71,71 @@ func TestWeightValue_NewWeightValue(t *testing.T) {
 
 func TestWeightValue_Float64(t *testing.T) {
 	weight, err := NewWeightValue(75.3)
-	assert.NoError(t, err)
-	assert.Equal(t, 75.3, weight.Float64())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if weight.Float64() != 75.3 {
+		t.Errorf("expected 75.3 but got %f", weight.Float64())
+	}
 }
 
 func TestWeightValue_String(t *testing.T) {
 	weight, err := NewWeightValue(75.3)
-	assert.NoError(t, err)
-	assert.Equal(t, "75.3", weight.String())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if weight.String() != "75.3" {
+		t.Errorf("expected 75.3 but got %s", weight.String())
+	}
 }
 
 func TestWeightValue_IsZero(t *testing.T) {
 	var weight WeightValue
-	assert.True(t, weight.IsZero())
+	if !weight.IsZero() {
+		t.Error("expected zero weight")
+	}
 
 	weight, err := NewWeightValue(75.3)
-	assert.NoError(t, err)
-	assert.False(t, weight.IsZero())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if weight.IsZero() {
+		t.Error("expected non-zero weight")
+	}
 }
 
 func TestWeightValue_Subtract(t *testing.T) {
 	weight1, _ := NewWeightValue(80.0)
 	weight2, _ := NewWeightValue(75.0)
-	
+
 	diff := weight1.Subtract(weight2)
-	assert.Equal(t, 5.0, diff.Float64())
+	if diff.Float64() != 5.0 {
+		t.Errorf("expected 5.0 but got %f", diff.Float64())
+	}
 }
 
 func TestWeightValue_Add(t *testing.T) {
 	weight1, _ := NewWeightValue(70.0)
 	weight2, _ := NewWeightValue(15.0)
-	
+
 	sum, err := weight1.Add(weight2)
-	assert.NoError(t, err)
-	assert.Equal(t, 85.0, sum.Float64())
-	
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if sum.Float64() != 85.0 {
+		t.Errorf("expected 85.0 but got %f", sum.Float64())
+	}
+
 	// Test that adding results in invalid weight
 	weight3, _ := NewWeightValue(490.0)
 	weight4, _ := NewWeightValue(20.0)
-	
+
 	_, err = weight3.Add(weight4)
-	assert.Error(t, err)
+	if err == nil {
+		t.Error("expected error but got nil")
+	}
 }

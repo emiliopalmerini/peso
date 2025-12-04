@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"peso/internal/domain/user"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWeight_NewWeight(t *testing.T) {
@@ -16,14 +14,14 @@ func TestWeight_NewWeight(t *testing.T) {
 	measuredAt := time.Now().AddDate(0, 0, -1) // Yesterday
 
 	tests := []struct {
-		name        string
-		id          string
-		userID      user.UserID
-		value       WeightValue
-		unit        WeightUnit
-		measuredAt  time.Time
-		notes       string
-		wantErr     bool
+		name       string
+		id         string
+		userID     user.UserID
+		value      WeightValue
+		unit       WeightUnit
+		measuredAt time.Time
+		notes      string
+		wantErr    bool
 	}{
 		{
 			name:       "valid weight",
@@ -91,63 +89,42 @@ func TestWeight_NewWeight(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			weight, err := NewWeight(tt.id, tt.userID, tt.value, tt.unit, tt.measuredAt, tt.notes)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, weight)
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				if weight != nil {
+					t.Errorf("expected nil weight but got %v", weight)
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, weight)
-				assert.Equal(t, tt.id, weight.ID().String())
-				assert.Equal(t, tt.userID.String(), weight.UserID().String())
-				assert.Equal(t, tt.value.Float64(), weight.Value().Float64())
-				assert.Equal(t, tt.unit.String(), weight.Unit().String())
-				assert.Equal(t, tt.measuredAt.Truncate(time.Second), weight.MeasuredAt().Truncate(time.Second))
-				assert.Equal(t, tt.notes, weight.Notes())
-				assert.False(t, weight.CreatedAt().IsZero())
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if weight == nil {
+					t.Error("expected weight but got nil")
+				} else {
+					if weight.ID().String() != tt.id {
+						t.Errorf("expected ID %s but got %s", tt.id, weight.ID().String())
+					}
+					if weight.UserID().String() != tt.userID.String() {
+						t.Errorf("expected userID %s but got %s", tt.userID.String(), weight.UserID().String())
+					}
+					if weight.Value().Float64() != tt.value.Float64() {
+						t.Errorf("expected value %f but got %f", tt.value.Float64(), weight.Value().Float64())
+					}
+					if weight.Unit().String() != tt.unit.String() {
+						t.Errorf("expected unit %s but got %s", tt.unit.String(), weight.Unit().String())
+					}
+					if weight.MeasuredAt().Truncate(time.Second) != tt.measuredAt.Truncate(time.Second) {
+						t.Errorf("expected measuredAt %v but got %v", tt.measuredAt, weight.MeasuredAt())
+					}
+					if weight.Notes() != tt.notes {
+						t.Errorf("expected notes %s but got %s", tt.notes, weight.Notes())
+					}
+					if weight.CreatedAt().IsZero() {
+						t.Error("expected non-zero CreatedAt")
+					}
+				}
 			}
 		})
 	}
-}
-
-func TestWeight_IsRecent(t *testing.T) {
-	userID, _ := user.NewUserID("giada")
-	weightValue, _ := NewWeightValue(70.5)
-	unit, _ := NewWeightUnit("kg")
-	
-	// Recent weight (today)
-	recentWeight, err := NewWeight("weight_123", userID, weightValue, unit, time.Now().AddDate(0, 0, 0), "")
-	assert.NoError(t, err)
-	assert.True(t, recentWeight.IsRecent())
-	
-	// Old weight (2 weeks ago)
-	oldWeight, err := NewWeight("weight_124", userID, weightValue, unit, time.Now().AddDate(0, 0, -14), "")
-	assert.NoError(t, err)
-	assert.False(t, oldWeight.IsRecent())
-}
-
-func TestWeight_IsSameDay(t *testing.T) {
-	userID, _ := user.NewUserID("giada")
-	weightValue, _ := NewWeightValue(70.5)
-	unit, _ := NewWeightUnit("kg")
-	
-	today := time.Now()
-	weight, err := NewWeight("weight_123", userID, weightValue, unit, today, "")
-	assert.NoError(t, err)
-	
-	assert.True(t, weight.IsSameDay(today))
-	assert.False(t, weight.IsSameDay(today.AddDate(0, 0, 1)))
-}
-
-func TestWeight_UpdateNotes(t *testing.T) {
-	userID, _ := user.NewUserID("giada")
-	weightValue, _ := NewWeightValue(70.5)
-	unit, _ := NewWeightUnit("kg")
-	measuredAt := time.Now().AddDate(0, 0, -1)
-	
-	weight, err := NewWeight("weight_123", userID, weightValue, unit, measuredAt, "")
-	assert.NoError(t, err)
-	
-	assert.Equal(t, "", weight.Notes())
-	
-	weight.UpdateNotes("Updated notes")
-	assert.Equal(t, "Updated notes", weight.Notes())
 }

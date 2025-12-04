@@ -10,28 +10,29 @@ import (
 	"peso/internal/domain/goal"
 	"peso/internal/domain/user"
 	"peso/internal/domain/weight"
+	"peso/internal/interfaces"
 	"strconv"
 	"strings"
 	"time"
 
 	assets "peso"
-
-	"github.com/gorilla/mux"
 )
 
 // Handlers contains all HTTP handlers
 type Handlers struct {
 	weightTracker *application.WeightTracker
 	goalTracker   *application.GoalTracker
+	userRepo      interfaces.UserRepository
 	templates     *template.Template
 	logger        *slog.Logger
 }
 
 // NewHandlers creates new web handlers
-func NewHandlers(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker, logger *slog.Logger) *Handlers {
+func NewHandlers(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker, userRepo interfaces.UserRepository, logger *slog.Logger) *Handlers {
 	return &Handlers{
 		weightTracker: weightTracker,
 		goalTracker:   goalTracker,
+		userRepo:      userRepo,
 		templates:     loadTemplates(),
 		logger:        logger,
 	}
@@ -39,12 +40,31 @@ func NewHandlers(weightTracker *application.WeightTracker, goalTracker *applicat
 
 // HomeHandler serves the main dashboard
 func (h *Handlers) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	users, err := h.userRepo.FindActive()
+	if err != nil {
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Failed to load users", err)
+		return
+	}
+
+	// Convert User objects to a simple user ID/name list for template
+	type UserView struct {
+		ID   string
+		Name string
+	}
+	var userViews []UserView
+	for _, u := range users {
+		userViews = append(userViews, UserView{
+			ID:   u.ID().String(),
+			Name: u.Name(),
+		})
+	}
+
 	data := struct {
 		Title string
-		Users []string
+		Users []UserView
 	}{
 		Title: "Peso - Weight Tracking",
-		Users: []string{"giada", "emilio"},
+		Users: userViews,
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "index.html", data); err != nil {
@@ -63,11 +83,9 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 	// Parse form data
 	userIDStr := r.FormValue("user_id")
 	weightStr := r.FormValue("weight")
-	unitStr := r.FormValue("unit")
-	notes := r.FormValue("notes")
 
 	// Validate inputs
-	if userIDStr == "" || weightStr == "" || unitStr == "" {
+	if userIDStr == "" || weightStr == "" {
 		writeError(h.logger, w, r, http.StatusBadRequest, "Missing required fields", nil)
 		return
 	}
@@ -95,14 +113,14 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	unit, err := weight.NewWeightUnit(unitStr)
+	unit, err := weight.NewWeightUnit("kg")
 	if err != nil {
-		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid unit", err)
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Invalid unit", err)
 		return
 	}
 
 	// Record weight using domain service
-	recordedWeight, err := h.weightTracker.RecordWeight(userID, weightValue, unit, measuredAt, notes)
+	recordedWeight, err := h.weightTracker.RecordWeight(userID, weightValue, unit, measuredAt, "")
 	if err != nil {
 		writeError(h.logger, w, r, http.StatusBadRequest, "Failed to record weight", err)
 		return
@@ -140,8 +158,7 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 
 // WeightHistoryHandler returns weight history for a user
 func (h *Handlers) WeightHistoryHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
+	userIDStr := r.PathValue("userID")
 
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
@@ -202,8 +219,7 @@ func (h *Handlers) WeightHistoryHandler(w http.ResponseWriter, r *http.Request) 
 
 // WeightLatestHandler returns the latest weight for a user
 func (h *Handlers) WeightLatestHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
+	userIDStr := r.PathValue("userID")
 
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
@@ -238,8 +254,7 @@ func (h *Handlers) WeightLatestHandler(w http.ResponseWriter, r *http.Request) {
 
 // UserDashboardHandler serves individual user dashboard
 func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
+	userIDStr := r.PathValue("userID")
 
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
@@ -289,8 +304,7 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
 
 // GoalFormHandler serves the goal entry form
 func (h *Handlers) GoalFormHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
+	userIDStr := r.PathValue("userID")
 
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
@@ -346,11 +360,10 @@ func (h *Handlers) AddGoalHandler(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.FormValue("user_id")
 	goalType := r.FormValue("goal_type") // optional for now
 	targetWeightStr := r.FormValue("target_weight")
-	unitStr := r.FormValue("unit")
 	targetDateStr := r.FormValue("target_date")
 	notes := r.FormValue("notes")
 
-	if userIDStr == "" || targetWeightStr == "" || unitStr == "" || targetDateStr == "" {
+	if userIDStr == "" || targetWeightStr == "" || targetDateStr == "" {
 		writeError(h.logger, w, r, http.StatusBadRequest, "Missing required fields", nil)
 		return
 	}
@@ -372,9 +385,9 @@ func (h *Handlers) AddGoalHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	unit, err := weight.NewWeightUnit(unitStr)
+	unit, err := weight.NewWeightUnit("kg")
 	if err != nil {
-		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid unit", err)
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Invalid unit", err)
 		return
 	}
 
@@ -405,8 +418,7 @@ func (h *Handlers) AddGoalHandler(w http.ResponseWriter, r *http.Request) {
 
 // RecentWeightsHandler returns the HTML partial with recent weights list
 func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
+	userIDStr := r.PathValue("userID")
 
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
@@ -449,8 +461,7 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 
 // WeightFormHandler serves the weight entry form
 func (h *Handlers) WeightFormHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
+	userIDStr := r.PathValue("userID")
 
 	data := struct {
 		UserID string
@@ -466,8 +477,7 @@ func (h *Handlers) WeightFormHandler(w http.ResponseWriter, r *http.Request) {
 
 // GoalSummaryHandler returns the goal summary partial
 func (h *Handlers) GoalSummaryHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
+	userIDStr := r.PathValue("userID")
 
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
@@ -514,8 +524,7 @@ func (h *Handlers) GoalSummaryHandler(w http.ResponseWriter, r *http.Request) {
 
 // GoalBadgeHandler returns just the small badge for the chart header
 func (h *Handlers) GoalBadgeHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
+	userIDStr := r.PathValue("userID")
 	userID, err := user.NewUserID(userIDStr)
 	if err != nil {
 		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)

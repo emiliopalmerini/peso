@@ -82,26 +82,21 @@ func (w *rwCapture) Write(b []byte) (int, error) {
 // Middleware: logs requests in structured form
 func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             start := time.Now()
             rw := &rwCapture{ResponseWriter: w}
 
             next.ServeHTTP(rw, r)
 
-            attrs := []slog.Attr{
+            logger.Info("http_request",
                 slog.String("method", r.Method),
                 slog.String("path", r.URL.Path),
                 slog.Int("status", statusOf(rw.status)),
                 slog.Int("size", rw.size),
                 slog.String("remote", r.RemoteAddr),
                 slog.String("request_id", RequestIDFromContext(r.Context())),
-                slog.Duration("duration_ms", time.Since(start)),
-            }
-            var args []any
-            for _, a := range attrs {
-                args = append(args, a)
-            }
-            logger.Info("http_request", args...)
+                slog.Duration("duration", time.Since(start)),
+            )
         })
     }
 }

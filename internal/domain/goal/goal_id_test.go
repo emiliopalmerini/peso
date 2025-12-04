@@ -2,8 +2,6 @@ package goal
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGoalID_NewGoalID(t *testing.T) {
@@ -33,11 +31,19 @@ func TestGoalID_NewGoalID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			goalID, err := NewGoalID(tt.value)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Empty(t, goalID)
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				if goalID.String() != "" {
+					t.Errorf("expected empty goalID but got %s", goalID.String())
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.value, goalID.String())
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if goalID.String() != tt.value {
+					t.Errorf("expected %s but got %s", tt.value, goalID.String())
+				}
 			}
 		})
 	}
@@ -45,15 +51,27 @@ func TestGoalID_NewGoalID(t *testing.T) {
 
 func TestGoalID_String(t *testing.T) {
 	goalID, err := NewGoalID("goal_123")
-	assert.NoError(t, err)
-	assert.Equal(t, "goal_123", goalID.String())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if goalID.String() != "goal_123" {
+		t.Errorf("expected goal_123 but got %s", goalID.String())
+	}
 }
 
 func TestGoalID_IsEmpty(t *testing.T) {
 	var goalID GoalID
-	assert.True(t, goalID.IsEmpty())
+	if !goalID.IsEmpty() {
+		t.Error("expected empty goalID")
+	}
 
 	goalID, err := NewGoalID("goal_123")
-	assert.NoError(t, err)
-	assert.False(t, goalID.IsEmpty())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if goalID.IsEmpty() {
+		t.Error("expected non-empty goalID")
+	}
 }

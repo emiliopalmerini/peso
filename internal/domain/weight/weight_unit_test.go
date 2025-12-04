@@ -2,8 +2,6 @@ package weight
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWeightUnit_NewWeightUnit(t *testing.T) {
@@ -43,23 +41,41 @@ func TestWeightUnit_NewWeightUnit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			unit, err := NewWeightUnit(tt.value)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Equal(t, WeightUnit(""), unit)
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				if unit != WeightUnit("") {
+					t.Errorf("expected empty unit but got %s", unit)
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want, unit)
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if unit != tt.want {
+					t.Errorf("expected %s but got %s", tt.want, unit)
+				}
 			}
 		})
 	}
 }
 
 func TestWeightUnit_String(t *testing.T) {
-	assert.Equal(t, "kg", WeightUnitKg.String())
-	assert.Equal(t, "lb", WeightUnitLb.String())
+	if WeightUnitKg.String() != "kg" {
+		t.Errorf("expected kg but got %s", WeightUnitKg.String())
+	}
+	if WeightUnitLb.String() != "lb" {
+		t.Errorf("expected lb but got %s", WeightUnitLb.String())
+	}
 }
 
 func TestWeightUnit_IsValid(t *testing.T) {
-	assert.True(t, WeightUnitKg.IsValid())
-	assert.True(t, WeightUnitLb.IsValid())
-	assert.False(t, WeightUnit("invalid").IsValid())
+	if !WeightUnitKg.IsValid() {
+		t.Error("expected kg to be valid")
+	}
+	if !WeightUnitLb.IsValid() {
+		t.Error("expected lb to be valid")
+	}
+	if WeightUnit("invalid").IsValid() {
+		t.Error("expected invalid to be invalid")
+	}
 }

@@ -13,16 +13,10 @@
   </div>
 
   <div class="field">
-    <label>Peso target</label>
-    <div style="display:flex; gap:8px;">
-      <input type="number" name="target_weight" step="0.1" min="10" max="500" required placeholder="70.0">
-      <select name="unit" required>
-        <option value="kg">kg</option>
-        <option value="lb">lb</option>
-      </select>
-    </div>
+    <label>Peso target (kg)</label>
+    <input type="number" name="target_weight" step="0.1" min="10" max="500" required placeholder="70.0">
     {{if .CurrentWeight}}
-    <div class="caption">Peso attuale: {{.CurrentWeight.Value}} {{.CurrentWeight.Unit}}</div>
+    <div class="caption">Peso attuale: {{.CurrentWeight.Value}} kg</div>
     {{end}}
   </div>
 

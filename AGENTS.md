@@ -115,8 +115,19 @@ Il progetto segue una architettura esagonale (Ports & Adapters) con Domain-Drive
 - **Interfaces** (`internal/interfaces/`): Port interfaces per hexagonal architecture
 
 Stack tecnologico:
-- Backend: Go 1.23+ con Gorilla Mux per routing
+- Backend: Go 1.23+ con net/http.ServeMux per routing (stdlib only, no external router)
 - Frontend: HTMX per interazioni dinamiche, Chart.js per grafici
 - Database: SQLite con migrazioni in `/migrations`
 - Templates: HTML templates in `/templates` (embedded via assets.go)
+
+## Dependencies
+
+Solo dependency esterna:
+- `modernc.org/sqlite`: Driver SQLite per Go
+
+Tutte le altre funzionalità usano la standard library:
+- `net/http` per routing e handlers
+- `testing` (stdlib) per test senza testify
+- `encoding/json` per JSON
+- `html/template` per templates
 

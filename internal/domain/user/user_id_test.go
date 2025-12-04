@@ -2,8 +2,6 @@ package user
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestUserID_NewUserID(t *testing.T) {
@@ -43,11 +41,19 @@ func TestUserID_NewUserID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			userID, err := NewUserID(tt.value)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Empty(t, userID)
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				if userID.String() != "" {
+					t.Errorf("expected empty userID but got %s", userID.String())
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.value, userID.String())
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if userID.String() != tt.value {
+					t.Errorf("expected %s but got %s", tt.value, userID.String())
+				}
 			}
 		})
 	}
@@ -55,15 +61,27 @@ func TestUserID_NewUserID(t *testing.T) {
 
 func TestUserID_String(t *testing.T) {
 	userID, err := NewUserID("giada")
-	assert.NoError(t, err)
-	assert.Equal(t, "giada", userID.String())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if userID.String() != "giada" {
+		t.Errorf("expected giada but got %s", userID.String())
+	}
 }
 
 func TestUserID_IsEmpty(t *testing.T) {
 	var userID UserID
-	assert.True(t, userID.IsEmpty())
+	if !userID.IsEmpty() {
+		t.Error("expected empty userID")
+	}
 
 	userID, err := NewUserID("giada")
-	assert.NoError(t, err)
-	assert.False(t, userID.IsEmpty())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if userID.IsEmpty() {
+		t.Error("expected non-empty userID")
+	}
 }

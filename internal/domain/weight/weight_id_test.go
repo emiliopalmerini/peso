@@ -2,8 +2,6 @@ package weight
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWeightID_NewWeightID(t *testing.T) {
@@ -33,11 +31,19 @@ func TestWeightID_NewWeightID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			weightID, err := NewWeightID(tt.value)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Empty(t, weightID)
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				if weightID.String() != "" {
+					t.Errorf("expected empty weightID but got %s", weightID.String())
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.value, weightID.String())
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if weightID.String() != tt.value {
+					t.Errorf("expected %s but got %s", tt.value, weightID.String())
+				}
 			}
 		})
 	}
@@ -45,15 +51,27 @@ func TestWeightID_NewWeightID(t *testing.T) {
 
 func TestWeightID_String(t *testing.T) {
 	weightID, err := NewWeightID("weight_123")
-	assert.NoError(t, err)
-	assert.Equal(t, "weight_123", weightID.String())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if weightID.String() != "weight_123" {
+		t.Errorf("expected weight_123 but got %s", weightID.String())
+	}
 }
 
 func TestWeightID_IsEmpty(t *testing.T) {
 	var weightID WeightID
-	assert.True(t, weightID.IsEmpty())
+	if !weightID.IsEmpty() {
+		t.Error("expected empty weightID")
+	}
 
 	weightID, err := NewWeightID("weight_123")
-	assert.NoError(t, err)
-	assert.False(t, weightID.IsEmpty())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+	if weightID.IsEmpty() {
+		t.Error("expected non-empty weightID")
+	}
 }

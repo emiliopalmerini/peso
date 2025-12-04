@@ -22,8 +22,8 @@
             <div class="list">
                 {{range .Users}}
                 <div class="row">
-                    <div>{{. | title}}</div>
-                    <a href="/users/{{.}}" class="btn btn-primary">Apri Dashboard</a>
+                    <div>{{.Name}}</div>
+                    <a href="/users/{{.ID}}" class="btn btn-primary">Apri Dashboard</a>
                 </div>
                 {{end}}
             </div>

@@ -3,8 +3,6 @@ package user
 import (
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestUser_NewUser(t *testing.T) {
@@ -49,17 +47,38 @@ func TestUser_NewUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			user, err := NewUser(tt.id, tt.userName, tt.email)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, user)
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				if user != nil {
+					t.Errorf("expected nil user but got %v", user)
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, user)
-				assert.Equal(t, tt.id, user.ID().String())
-				assert.Equal(t, tt.userName, user.Name())
-				assert.Equal(t, tt.email, user.Email())
-				assert.True(t, user.IsActive())
-				assert.False(t, user.CreatedAt().IsZero())
-				assert.False(t, user.UpdatedAt().IsZero())
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if user == nil {
+					t.Error("expected user but got nil")
+				} else {
+					if user.ID().String() != tt.id {
+						t.Errorf("expected ID %s but got %s", tt.id, user.ID().String())
+					}
+					if user.Name() != tt.userName {
+						t.Errorf("expected name %s but got %s", tt.userName, user.Name())
+					}
+					if user.Email() != tt.email {
+						t.Errorf("expected email %s but got %s", tt.email, user.Email())
+					}
+					if !user.IsActive() {
+						t.Error("expected user to be active")
+					}
+					if user.CreatedAt().IsZero() {
+						t.Error("expected non-zero CreatedAt")
+					}
+					if user.UpdatedAt().IsZero() {
+						t.Error("expected non-zero UpdatedAt")
+					}
+				}
 			}
 		})
 	}
@@ -67,44 +86,69 @@ func TestUser_NewUser(t *testing.T) {
 
 func TestUser_Deactivate(t *testing.T) {
 	user, err := NewUser("giada", "Giada", "")
-	assert.NoError(t, err)
-	
-	assert.True(t, user.IsActive())
-	
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
+	if !user.IsActive() {
+		t.Error("expected user to be active initially")
+	}
+
 	user.Deactivate()
-	assert.False(t, user.IsActive())
-	assert.False(t, user.UpdatedAt().IsZero())
+	if user.IsActive() {
+		t.Error("expected user to be inactive after deactivate")
+	}
+	if user.UpdatedAt().IsZero() {
+		t.Error("expected non-zero UpdatedAt after deactivate")
+	}
 }
 
 func TestUser_Activate(t *testing.T) {
 	user, err := NewUser("giada", "Giada", "")
-	assert.NoError(t, err)
-	
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
 	user.Deactivate()
-	assert.False(t, user.IsActive())
-	
+	if user.IsActive() {
+		t.Error("expected user to be inactive after deactivate")
+	}
+
 	user.Activate()
-	assert.True(t, user.IsActive())
-	assert.False(t, user.UpdatedAt().IsZero())
+	if !user.IsActive() {
+		t.Error("expected user to be active after activate")
+	}
+	if user.UpdatedAt().IsZero() {
+		t.Error("expected non-zero UpdatedAt after activate")
+	}
 }
 
 func TestUser_UpdateEmail(t *testing.T) {
 	user, err := NewUser("giada", "Giada", "")
-	assert.NoError(t, err)
-	
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
 	originalUpdatedAt := user.UpdatedAt()
 	time.Sleep(time.Millisecond) // Ensure time difference
-	
+
 	user.UpdateEmail("giada@example.com")
-	assert.Equal(t, "giada@example.com", user.Email())
-	assert.True(t, user.UpdatedAt().After(originalUpdatedAt))
+	if user.Email() != "giada@example.com" {
+		t.Errorf("expected email giada@example.com but got %s", user.Email())
+	}
+	if !user.UpdatedAt().After(originalUpdatedAt) {
+		t.Error("expected UpdatedAt to be after original")
+	}
 }
 
 func TestUser_UpdateName(t *testing.T) {
 	tests := []struct {
-		name     string
-		newName  string
-		wantErr  bool
+		name    string
+		newName string
+		wantErr bool
 	}{
 		{
 			name:    "valid name update",
@@ -126,19 +170,32 @@ func TestUser_UpdateName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			user, err := NewUser("giada", "Giada", "")
-			assert.NoError(t, err)
-			
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+				return
+			}
+
 			originalUpdatedAt := user.UpdatedAt()
 			time.Sleep(time.Millisecond)
-			
+
 			err = user.UpdateName(tt.newName)
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Equal(t, "Giada", user.Name()) // Should remain unchanged
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				if user.Name() != "Giada" {
+					t.Errorf("expected name to remain Giada but got %s", user.Name())
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.newName, user.Name())
-				assert.True(t, user.UpdatedAt().After(originalUpdatedAt))
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if user.Name() != tt.newName {
+					t.Errorf("expected name %s but got %s", tt.newName, user.Name())
+				}
+				if !user.UpdatedAt().After(originalUpdatedAt) {
+					t.Error("expected UpdatedAt to be after original")
+				}
 			}
 		})
 	}

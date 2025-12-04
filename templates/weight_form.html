@@ -6,19 +6,8 @@
   <input type="hidden" name="user_id" value="{{.UserID}}">
 
   <div class="field">
-    <label>Peso</label>
-    <div style="display:flex; gap:8px;">
-      <input type="number" name="weight" step="0.1" min="10" max="500" required placeholder="70.0">
-      <select name="unit" required>
-        <option value="kg">kg</option>
-        <option value="lb">lb</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Note (opzionali)</label>
-    <input type="text" name="notes" placeholder="es. peso mattutino">
+    <label>Peso (kg)</label>
+    <input type="number" name="weight" step="0.1" min="10" max="500" required placeholder="70.0">
   </div>
 
   <div class="actions">
