@@ -20,11 +20,15 @@
         <h1 class="page__title">Dashboard {{.UserID | title}}</h1>
 
         <section class="page__section">
-            <div id="goal-summary"
-                 hx-get="/users/{{.UserID}}/goal-summary"
-                 hx-trigger="load, weight-updated from:body, goal-updated from:body">
-                <div class="list"><div class="row"><div class="caption">Caricamento…</div></div></div>
-            </div>
+            <details>
+                <summary style="cursor: pointer; font-weight: 600; padding: 8px 0; user-select: none;">Obiettivo</summary>
+                <div id="goal-summary"
+                     hx-get="/users/{{.UserID}}/goal-summary"
+                     hx-trigger="load, weight-updated from:body, goal-updated from:body"
+                     style="padding: 12px 0;">
+                    <div class="list"><div class="row"><div class="caption">Caricamento…</div></div></div>
+                </div>
+            </details>
         </section>
 
         <section class="page__section"><div id="panel"></div></section>
@@ -57,10 +61,9 @@
         </section>
 
         <section class="page__section">
-            <div class="actions">
-                <button hx-get="/users/{{.UserID}}/weight-form" hx-target="#weight-form" class="btn btn-primary">Registra Peso</button>
-            </div>
-            <div id="weight-form"></div>
+            <div id="weight-form"
+                 hx-get="/users/{{.UserID}}/weight-form"
+                 hx-trigger="load"></div>
         </section>
 
         <section class="page__section">
@@ -209,16 +212,22 @@
                 const periodEl = document.getElementById('periodSelect');
                 const period = periodEl ? periodEl.value : '3months';
                 const [data, latest] = await Promise.all([
-                    fetch(`/api/weights/{{.UserID}}?period=${period}`).then(r=>r.json()),
+                    fetch(`/api/weights/{{.UserID}}?period=${period}`).then(r=>r.json()).catch(()=>null),
                     fetch(`/api/weights/latest/{{.UserID}}`).then(r=>r.ok?r.json():null).catch(()=>null)
                 ]);
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    const body = document.querySelector('.chart__body');
+                    if (body) body.innerHTML = '<div class="caption">Nessun dato disponibile</div>';
+                    return;
+                }
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
                 const avgValues = averaged.map(p => p.value);
                 const rawPoints = data.map(w => ({ x: w.date, y: w.value, t: w.time }));
 
-                // Calculate Y axis limits based only on weight data (exclude goal line)
+                // Calculate Y axis limits including goal weight
                 const allWeightValues = [...avgValues, ...rawPoints.map(p => p.y)];
+                if (goal) allWeightValues.push(parseFloat(goal.targetWeight));
                 const minWeight = Math.min(...allWeightValues);
                 const maxWeight = Math.max(...allWeightValues);
                 const padding = (maxWeight - minWeight) * 0.1 || 1; // 10% padding or minimum 1kg
@@ -260,24 +269,10 @@
                             },
                             {
                                 type: 'line',
-                                label: 'Zona successo',
-                                data: planData.upperBound.concat([...planData.lowerBound].reverse()),
+                                label: 'Obiettivo',
+                                data: (goal && labels.length > 0) ? [{ x: labels[0], y: parseFloat(goal.targetWeight) }, { x: labels[labels.length - 1], y: parseFloat(goal.targetWeight) }] : [],
                                 parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                                borderColor: 'transparent',
-                                backgroundColor: planData.colors.zone,
-                                borderWidth: 0,
-                                pointRadius: 0,
-                                showLine: true,
-                                fill: true,
-                                xAxisID: 'x',
-                                yAxisID: 'y'
-                            },
-                            {
-                                type: 'line',
-                                label: 'Traiettoria ideale',
-                                data: planData.centerLine,
-                                parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                                borderColor: planData.colors.line,
+                                borderColor: 'rgb(156, 163, 175)',
                                 backgroundColor: 'transparent',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
@@ -323,38 +318,17 @@
                     chart.data.datasets[0].data = rawPoints;
                     chart.data.datasets[1].data = avgValues;
                     
-                    // Update or add success zone
+                    // Update or add goal line
+                    const goalLineData = (goal && labels.length > 0) ? [{ x: labels[0], y: parseFloat(goal.targetWeight) }, { x: labels[labels.length - 1], y: parseFloat(goal.targetWeight) }] : [];
                     if (chart.data.datasets[2]) {
-                        chart.data.datasets[2].data = planData.upperBound.concat([...planData.lowerBound].reverse());
-                        chart.data.datasets[2].backgroundColor = planData.colors.zone;
+                        chart.data.datasets[2].data = goalLineData;
                     } else {
                         chart.data.datasets.push({
                             type: 'line',
-                            label: 'Zona successo',
-                            data: planData.upperBound.concat([...planData.lowerBound].reverse()),
+                            label: 'Obiettivo',
+                            data: goalLineData,
                             parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                            borderColor: 'transparent',
-                            backgroundColor: planData.colors.zone,
-                            borderWidth: 0,
-                            pointRadius: 0,
-                            showLine: true,
-                            fill: true,
-                            xAxisID: 'x',
-                            yAxisID: 'y'
-                        });
-                    }
-                    
-                    // Update or add ideal trajectory
-                    if (chart.data.datasets[3]) {
-                        chart.data.datasets[3].data = planData.centerLine;
-                        chart.data.datasets[3].borderColor = planData.colors.line;
-                    } else {
-                        chart.data.datasets.push({
-                            type: 'line',
-                            label: 'Traiettoria ideale',
-                            data: planData.centerLine,
-                            parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                            borderColor: planData.colors.line,
+                            borderColor: 'rgb(156, 163, 175)',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
                             borderDash: [5, 5],

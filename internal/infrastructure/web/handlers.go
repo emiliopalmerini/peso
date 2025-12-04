@@ -64,7 +64,6 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.FormValue("user_id")
 	weightStr := r.FormValue("weight")
 	unitStr := r.FormValue("unit")
-	dateStr := r.FormValue("date")
 	notes := r.FormValue("notes")
 
 	// Validate inputs
@@ -80,20 +79,8 @@ func (h *Handlers) AddWeightHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse date and attach current time (hour/min/sec) automatically
-	var measuredAt time.Time
-	if dateStr == "" {
-		measuredAt = time.Now()
-	} else {
-		// Parse provided date in local timezone
-		d, err2 := time.ParseInLocation("02/01/2006", dateStr, time.Local)
-		if err2 != nil {
-			writeError(h.logger, w, r, http.StatusBadRequest, "Invalid date format", err2)
-			return
-		}
-		now := time.Now()
-		measuredAt = time.Date(d.Year(), d.Month(), d.Day(), now.Hour(), now.Minute(), now.Second(), 0, time.Local)
-	}
+	// Use current server time
+	measuredAt := time.Now()
 
 	// Create domain objects
 	userID, err := user.NewUserID(userIDStr)
@@ -226,7 +213,7 @@ func (h *Handlers) WeightLatestHandler(w http.ResponseWriter, r *http.Request) {
 
 	latest, err := h.weightTracker.GetLatestWeight(userID)
 	if err != nil {
-		writeError(h.logger, w, r, http.StatusInternalServerError, "Failed to get latest weight", err)
+		writeError(h.logger, w, r, http.StatusNotFound, "No weight found", err)
 		return
 	}
 
@@ -467,10 +454,8 @@ func (h *Handlers) WeightFormHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		UserID string
-		Today  string
 	}{
 		UserID: userIDStr,
-		Today:  time.Now().Format("02/01/2006"),
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "weight_form.html", data); err != nil {
