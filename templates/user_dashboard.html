@@ -3,34 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard {{.UserID | title}}</title>
+    <title>Dashboard - Peso</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/min.css">
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="style-minimal">
+<body class="theme-ink density-comfortable style-minimal">
     <header class="topbar">
-        <div class="container topbar__inner" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="container topbar__inner">
             <a class="brand" href="/">Peso</a>
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 0.9em;">{{.UserName}}</span>
-                <a href="/logout" class="btn" style="font-size: 0.85em; padding: 6px 12px;">Esci</a>
+            <div class="topbar__user">
+                <span class="topbar__user-name">{{.UserName}}</span>
+                <a href="/logout" class="logout-link">Esci</a>
             </div>
         </div>
     </header>
 
     <main class="container page">
-        <h1 class="page__title">Dashboard {{.UserID | title}}</h1>
+        <h1 class="page__title">Dashboard</h1>
 
         <section class="page__section">
             <details>
-                <summary style="cursor: pointer; font-weight: 600; padding: 8px 0; user-select: none;">Obiettivo</summary>
-                <div id="goal-summary"
+                <summary>Obiettivo</summary>
+                <div class="details-content" id="goal-summary"
                      hx-get="/users/{{.UserID}}/goal-summary"
-                     hx-trigger="load, weight-updated from:body, goal-updated from:body"
-                     style="padding: 12px 0;">
-                    <div class="list"><div class="row"><div class="caption">Caricamento…</div></div></div>
+                     hx-trigger="load, weight-updated from:body, goal-updated from:body">
+                    <div class="text-muted">Caricamento...</div>
                 </div>
             </details>
         </section>
@@ -39,15 +38,15 @@
 
         <section class="page__section">
             <div class="chart">
-                <div class="chart__head" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div>Andamento Peso</div>
+                <div class="chart__head">
+                    <div style="display:flex; align-items:center; gap:var(--space-3);">
+                        <span>Andamento Peso</span>
                         <span id="goal-badge"
                               hx-get="/users/{{.UserID}}/goal-badge"
                               hx-trigger="load, weight-updated from:body, goal-updated from:body"></span>
                     </div>
-                    <div>
-                        <label for="periodSelect" class="caption" style="margin-right:6px;">Periodo</label>
+                    <div style="display:flex; align-items:center; gap:var(--space-2);">
+                        <label for="periodSelect" class="caption">Periodo</label>
                         <select id="periodSelect">
                             <option value="week">1 settimana</option>
                             <option value="month">1 mese</option>
@@ -74,33 +73,29 @@
             <div class="list" id="recent-weights"
                  hx-get="/users/{{.UserID}}/recent-weights"
                  hx-trigger="load, weight-updated from:body">
-                <div class="row"><div class="caption">Caricamento…</div></div>
+                <div class="row"><span class="text-muted">Caricamento...</span></div>
             </div>
         </section>
     </main>
 
     <script>
-        console.log('Script starting...');
         let chart;
         const ctx = document.getElementById('weightChart').getContext('2d');
         const goal = {{ if .ActiveGoal }}{{ if and .CreatedAt .StartWeight }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}", createdAt: "{{.CreatedAt}}", startWeight: {{.StartWeight}} }{{ else }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}" }{{ end }}{{ else }} null {{ end }};
-        console.log('Goal data:', goal);
 
         function itToDate(itDate) {
-            // 'DD/MM/YYYY' -> Date object
             const [d,m,y] = itDate.split('/');
-            return new Date(y, m-1, d); // month is 0-indexed in Date constructor
+            return new Date(y, m-1, d);
         }
 
         function aggregateDailyAverage(data) {
             const groups = new Map();
             for (const w of data) {
-                const d = w.date; // already DD/MM/YYYY
+                const d = w.date;
                 if (!groups.has(d)) groups.set(d, []);
                 groups.get(d).push(w.value);
             }
             const dates = Array.from(groups.keys()).sort((a, b) => {
-                // Sort DD/MM/YYYY dates chronologically
                 const dateA = itToDate(a);
                 const dateB = itToDate(b);
                 return dateA - dateB;
@@ -114,101 +109,66 @@
         }
 
         function buildPlanPoints(goalInfo, chartLabels, averaged) {
-            console.log('buildPlanPoints called with:', goalInfo);
             if (!goalInfo || !goalInfo.createdAt || goalInfo.startWeight === undefined) {
-                console.log('Missing goal data, returning empty array');
                 return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
             }
             const start = itToDate(goalInfo.createdAt);
             const target = itToDate(goalInfo.targetDate);
-            console.log('Dates:', {start, target});
             if (isNaN(start) || isNaN(target) || target <= start) {
-                console.log('Invalid dates, returning empty array');
                 return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
             }
-            
+
             const targetWeight = parseFloat(goalInfo.targetWeight);
             const startWeight = goalInfo.startWeight;
-            
+
             if (chartLabels.length === 0) {
                 return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
             }
-            
+
             let centerLine = [];
             const firstChartDate = itToDate(chartLabels[0]);
             const lastChartDate = itToDate(chartLabels[chartLabels.length - 1]);
-            
-            // Calculate the theoretical line from goal creation to target
+
             const totalDays = (target - start) / (1000 * 60 * 60 * 24);
-            
-            // Calculate tolerance zone (±0.5kg or ±5% of total weight change)
             const totalWeightChange = Math.abs(targetWeight - startWeight);
             const tolerance = Math.max(0.5, totalWeightChange * 0.05);
-            
-            // Start point: either at goal creation date or at chart boundary
+
             if (start >= firstChartDate && start <= lastChartDate) {
-                // Goal creation is within chart range, start from there
                 centerLine.push({ x: goalInfo.createdAt, y: startWeight });
             } else if (start < firstChartDate) {
-                // Goal creation is before chart, calculate weight at first chart date
                 const daysToFirstChart = (firstChartDate - start) / (1000 * 60 * 60 * 24);
                 const weightAtFirstChart = startWeight + ((targetWeight - startWeight) * daysToFirstChart / totalDays);
                 centerLine.push({ x: chartLabels[0], y: weightAtFirstChart });
             }
-            
-            // End point: only add if target date is within reasonable chart range
+
             if (target <= lastChartDate || (target - lastChartDate) / (1000 * 60 * 60 * 24) <= 30) {
-                // Target is within chart or max 30 days after last data point
                 centerLine.push({ x: goalInfo.targetDate, y: targetWeight });
             } else {
-                // Target is too far, extend line to last chart date
                 const daysToLastChart = (lastChartDate - start) / (1000 * 60 * 60 * 24);
                 const weightAtLastChart = startWeight + ((targetWeight - startWeight) * daysToLastChart / totalDays);
                 centerLine.push({ x: chartLabels[chartLabels.length - 1], y: weightAtLastChart });
             }
-            
-            // Create upper and lower bounds for the tolerance zone
-            const upperBound = centerLine.map(point => ({
-                x: point.x,
-                y: point.y + tolerance
-            }));
-            
-            const lowerBound = centerLine.map(point => ({
-                x: point.x,
-                y: point.y - tolerance
-            }));
-            
-            // Determine if user is on track based on recent weight data
-            let colors = { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' }; // Default gray
-            
+
+            const upperBound = centerLine.map(point => ({ x: point.x, y: point.y + tolerance }));
+            const lowerBound = centerLine.map(point => ({ x: point.x, y: point.y - tolerance }));
+
+            let colors = { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' };
+
             if (averaged.length > 0) {
                 const latestWeight = averaged[averaged.length - 1].value;
                 const latestDate = itToDate(averaged[averaged.length - 1].date);
-                
-                // Calculate expected weight at latest date
                 const daysSinceStart = (latestDate - start) / (1000 * 60 * 60 * 24);
                 const expectedWeight = startWeight + ((targetWeight - startWeight) * daysSinceStart / totalDays);
                 const deviation = Math.abs(latestWeight - expectedWeight);
-                
+
                 if (deviation <= tolerance) {
-                    // On track - blue zone
                     colors = { zone: 'rgba(59, 130, 246, 0.1)', line: 'rgb(59, 130, 246)' };
                 } else {
-                    // Off track - red zone  
                     colors = { zone: 'rgba(239, 68, 68, 0.1)', line: 'rgb(239, 68, 68)' };
                 }
             }
-            
-            console.log('Plan data:', { centerLine, upperBound, lowerBound, tolerance, colors });
-            return { centerLine, upperBound, lowerBound, colors };
-        }
 
-        function todayIt() {
-            const d = new Date();
-            const day = String(d.getDate()).padStart(2,'0');
-            const m = String(d.getMonth()+1).padStart(2,'0');
-            const y = d.getFullYear();
-            return `${day}/${m}/${y}`;
+            return { centerLine, upperBound, lowerBound, colors };
         }
 
         async function renderChart() {
@@ -221,7 +181,7 @@
                 ]);
                 if (!data || !Array.isArray(data) || data.length === 0) {
                     const body = document.querySelector('.chart__body');
-                    if (body) body.innerHTML = '<div class="caption">Nessun dato disponibile</div>';
+                    if (body) body.innerHTML = '<div class="empty-state">Nessun dato disponibile</div>';
                     return;
                 }
                 const averaged = aggregateDailyAverage(data);
@@ -229,18 +189,15 @@
                 const avgValues = averaged.map(p => p.value);
                 const rawPoints = data.map(w => ({ x: w.date, y: w.value, t: w.time }));
 
-                // Calculate Y axis limits including goal weight
                 const allWeightValues = [...avgValues, ...rawPoints.map(p => p.y)];
                 if (goal) allWeightValues.push(parseFloat(goal.targetWeight));
                 const minWeight = Math.min(...allWeightValues);
                 const maxWeight = Math.max(...allWeightValues);
-                const padding = (maxWeight - minWeight) * 0.1 || 1; // 10% padding or minimum 1kg
+                const padding = (maxWeight - minWeight) * 0.1 || 1;
                 const yMin = Math.max(0, minWeight - padding);
                 const yMax = maxWeight + padding;
 
-                // trajectory from goal creation date towards target using starting weight
                 const planData = goal ? buildPlanPoints(goal, labels, averaged) : { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
-                console.log('Plan data for chart:', planData);
 
                 const config = {
                     type: 'line',
@@ -306,8 +263,8 @@
                             }
                         },
                         scales: {
-                            y: { 
-                                beginAtZero: false, 
+                            y: {
+                                beginAtZero: false,
                                 grid: { color: 'rgba(0,0,0,0.06)' },
                                 min: yMin,
                                 max: yMax
@@ -321,8 +278,7 @@
                     chart.data.labels = labels;
                     chart.data.datasets[0].data = rawPoints;
                     chart.data.datasets[1].data = avgValues;
-                    
-                    // Update or add goal line
+
                     const goalLineData = (goal && labels.length > 0) ? [{ x: labels[0], y: parseFloat(goal.targetWeight) }, { x: labels[labels.length - 1], y: parseFloat(goal.targetWeight) }] : [];
                     if (chart.data.datasets[2]) {
                         chart.data.datasets[2].data = goalLineData;
@@ -342,7 +298,7 @@
                             yAxisID: 'y'
                         });
                     }
-                    
+
                     chart.options.scales.y.min = yMin;
                     chart.options.scales.y.max = yMax;
                     chart.update();
@@ -352,7 +308,7 @@
             } catch (e) {
                 console.error('Error loading chart data:', e);
                 const body = document.querySelector('.chart__body');
-                if (body) body.innerHTML = '<div class="caption">Errore nel caricamento del grafico</div>';
+                if (body) body.innerHTML = '<div class="empty-state">Errore nel caricamento</div>';
             }
         }
 
