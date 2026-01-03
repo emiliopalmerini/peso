@@ -7,12 +7,13 @@ import (
 )
 
 type User struct {
-	id        UserID
-	name      string
-	email     string
-	active    bool
-	createdAt time.Time
-	updatedAt time.Time
+	id           UserID
+	name         string
+	email        string
+	passwordHash string
+	active       bool
+	createdAt    time.Time
+	updatedAt    time.Time
 }
 
 var (
@@ -24,22 +25,36 @@ func NewUser(id, name, email string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	trimmedName := strings.TrimSpace(name)
 	if trimmedName == "" {
 		return nil, ErrEmptyName
 	}
-	
+
 	now := time.Now()
-	
+
 	return &User{
-		id:        userID,
-		name:      trimmedName,
-		email:     email,
-		active:    true,
-		createdAt: now,
-		updatedAt: now,
+		id:           userID,
+		name:         trimmedName,
+		email:        email,
+		passwordHash: "",
+		active:       true,
+		createdAt:    now,
+		updatedAt:    now,
 	}, nil
+}
+
+func NewUserWithPassword(id, name, email, password string) (*User, error) {
+	u, err := NewUser(id, name, email)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := u.SetPassword(password); err != nil {
+		return nil, err
+	}
+
+	return u, nil
 }
 
 func (u *User) ID() UserID {
@@ -86,8 +101,38 @@ func (u *User) UpdateName(name string) error {
 	if trimmedName == "" {
 		return ErrEmptyName
 	}
-	
+
 	u.name = trimmedName
 	u.updatedAt = time.Now()
 	return nil
+}
+
+func (u *User) PasswordHash() string {
+	return u.passwordHash
+}
+
+func (u *User) HasPassword() bool {
+	return u.passwordHash != ""
+}
+
+func (u *User) SetPassword(plaintext string) error {
+	pwd, err := NewPassword(plaintext)
+	if err != nil {
+		return err
+	}
+	u.passwordHash = pwd.Hash()
+	u.updatedAt = time.Now()
+	return nil
+}
+
+func (u *User) SetPasswordHash(hash string) {
+	u.passwordHash = hash
+}
+
+func (u *User) VerifyPassword(plaintext string) bool {
+	if u.passwordHash == "" {
+		return false
+	}
+	pwd := NewPasswordFromHash(u.passwordHash)
+	return pwd.Verify(plaintext)
 }

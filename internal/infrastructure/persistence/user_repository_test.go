@@ -21,6 +21,7 @@ func setupTestDB(t *testing.T) *DB {
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
 			email TEXT DEFAULT '',
+			password_hash TEXT DEFAULT '',
 			active BOOLEAN NOT NULL DEFAULT TRUE,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP

@@ -1,18 +1,19 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "os"
-    "io/fs"
-    "log/slog"
+	"fmt"
+	"io/fs"
+	"log/slog"
+	"net/http"
+	"os"
 
-    "peso/internal/application"
-    "peso/internal/infrastructure/persistence"
-    "peso/internal/infrastructure/web"
-    "peso/internal/interfaces"
-    assets "peso"
-    "peso/internal/infrastructure/logging"
+	assets "peso"
+	"peso/internal/application"
+	"peso/internal/infrastructure/logging"
+	"peso/internal/infrastructure/middleware"
+	"peso/internal/infrastructure/persistence"
+	"peso/internal/infrastructure/web"
+	"peso/internal/interfaces"
 )
 
 // We'll load migrations from the filesystem at runtime for now
@@ -64,19 +65,20 @@ func main() {
 	userRepo := persistence.NewUserRepository(db)
 	weightRepo := persistence.NewWeightRepository(db)
 	goalRepo := persistence.NewGoalRepository(db)
+	sessionRepo := persistence.NewSessionRepository(db)
 
 	// Initialize domain services
 	weightTracker := application.NewWeightTracker(userRepo, weightRepo)
 	goalTracker := application.NewGoalTracker(userRepo, weightRepo, goalRepo)
+	authService := application.NewAuthService(userRepo, sessionRepo)
 
-	// Test the basic functionality
-	if err := testBasicFunctionality(userRepo); err != nil {
-		logger.Error("basic_functionality_test_failed", slog.Any("error", err))
-		os.Exit(1)
+	// Cleanup expired sessions on startup
+	if err := authService.CleanupExpiredSessions(); err != nil {
+		logger.Warn("failed_to_cleanup_sessions", slog.Any("error", err))
 	}
 
 	// Setup HTTP server
-    router := setupRouter(weightTracker, goalTracker, userRepo, logger)
+	router := setupRouter(weightTracker, goalTracker, authService, userRepo, logger)
 
     logger.Info("server_start", 
         slog.String("port", port),
@@ -89,11 +91,12 @@ func main() {
 	}
 }
 
-func setupRouter(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker, userRepo interface{}, logger *slog.Logger) http.Handler {
-    mux := http.NewServeMux()
+func setupRouter(weightTracker *application.WeightTracker, goalTracker *application.GoalTracker, authService *application.AuthService, userRepo interface{}, logger *slog.Logger) http.Handler {
+	mux := http.NewServeMux()
 
-    // Initialize web handlers
-    handlers := web.NewHandlers(weightTracker, goalTracker, userRepo.(interfaces.UserRepository), logger)
+	// Initialize web handlers
+	handlers := web.NewHandlers(weightTracker, goalTracker, userRepo.(interfaces.UserRepository), logger)
+	authHandlers := web.NewAuthHandlers(authService, logger)
 
 	// Health endpoints
 	mux.HandleFunc("GET /health", healthHandler)
@@ -119,14 +122,24 @@ func setupRouter(weightTracker *application.WeightTracker, goalTracker *applicat
         http.StripPrefix("/static/", staticHandler).ServeHTTP(w, r)
     })
 
-    // Web UI endpoints
-    mux.HandleFunc("GET /", handlers.HomeHandler)
-    mux.HandleFunc("GET /users/{userID}", handlers.UserDashboardHandler)
-    mux.HandleFunc("GET /users/{userID}/recent-weights", handlers.RecentWeightsHandler)
-    mux.HandleFunc("GET /users/{userID}/weight-form", handlers.WeightFormHandler)
-    mux.HandleFunc("GET /users/{userID}/goal-form", handlers.GoalFormHandler)
-    mux.HandleFunc("GET /users/{userID}/goal-summary", handlers.GoalSummaryHandler)
-    mux.HandleFunc("GET /users/{userID}/goal-badge", handlers.GoalBadgeHandler)
+	// Auth routes (public)
+	mux.HandleFunc("GET /login", authHandlers.LoginPageHandler)
+	mux.HandleFunc("POST /login", authHandlers.LoginHandler)
+	mux.HandleFunc("GET /register", authHandlers.RegisterPageHandler)
+	mux.HandleFunc("POST /register", authHandlers.RegisterHandler)
+	mux.HandleFunc("GET /set-password", authHandlers.SetPasswordPageHandler)
+	mux.HandleFunc("POST /set-password", authHandlers.SetPasswordHandler)
+	mux.HandleFunc("POST /logout", authHandlers.LogoutHandler)
+	mux.HandleFunc("GET /logout", authHandlers.LogoutHandler)
+
+	// Web UI endpoints
+	mux.HandleFunc("GET /", handlers.HomeHandler)
+	mux.HandleFunc("GET /users/{userID}", handlers.UserDashboardHandler)
+	mux.HandleFunc("GET /users/{userID}/recent-weights", handlers.RecentWeightsHandler)
+	mux.HandleFunc("GET /users/{userID}/weight-form", handlers.WeightFormHandler)
+	mux.HandleFunc("GET /users/{userID}/goal-form", handlers.GoalFormHandler)
+	mux.HandleFunc("GET /users/{userID}/goal-summary", handlers.GoalSummaryHandler)
+	mux.HandleFunc("GET /users/{userID}/goal-badge", handlers.GoalBadgeHandler)
 
 	// API endpoints
 	mux.HandleFunc("POST /api/weights", handlers.AddWeightHandler)
@@ -136,10 +149,11 @@ func setupRouter(weightTracker *application.WeightTracker, goalTracker *applicat
 
 	// Wrap with middleware
 	var handler http.Handler = mux
+	handler = middleware.SessionMiddleware(authService)(handler)
 	handler = logging.RequestLogger(logger)(handler)
 	handler = logging.Recoverer(logger)(handler)
 	handler = logging.RequestID(handler)
-	
+
 	return handler
 }
 
@@ -155,12 +169,6 @@ func readyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status": "ready"}`))
 }
 
-
-func testBasicFunctionality(userRepo interface{}) error {
-	// This would test our domain objects work correctly
-	// For now, just return success to show the app structure works
-	return nil
-}
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {

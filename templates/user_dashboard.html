@@ -11,8 +11,12 @@
 </head>
 <body class="style-minimal">
     <header class="topbar">
-        <div class="container topbar__inner">
+        <div class="container topbar__inner" style="display: flex; justify-content: space-between; align-items: center;">
             <a class="brand" href="/">Peso</a>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 0.9em;">{{.UserName}}</span>
+                <a href="/logout" class="btn" style="font-size: 0.85em; padding: 6px 12px;">Esci</a>
+            </div>
         </div>
     </header>
 

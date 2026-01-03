@@ -74,6 +74,28 @@ func (m *MockUserRepository) Exists(id user.UserID) (bool, error) {
 	return false, nil
 }
 
+func (m *MockUserRepository) FindByEmail(email string) (*user.User, error) {
+	m.calls["FindByEmail"] = append(m.calls["FindByEmail"], email)
+	if err, ok := m.data["FindByEmailError"]; ok {
+		return nil, err.(error)
+	}
+	if u, ok := m.data["FindByEmailResult"]; ok {
+		return u.(*user.User), nil
+	}
+	return nil, errors.New("not found")
+}
+
+func (m *MockUserRepository) EmailExists(email string) (bool, error) {
+	m.calls["EmailExists"] = append(m.calls["EmailExists"], email)
+	if err, ok := m.data["EmailExistsError"]; ok {
+		return false, err.(error)
+	}
+	if exists, ok := m.data["EmailExistsResult"]; ok {
+		return exists.(bool), nil
+	}
+	return false, nil
+}
+
 type MockWeightRepository struct {
 	calls map[string][]interface{}
 	data  map[string]interface{}

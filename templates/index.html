@@ -6,7 +6,6 @@
     <title>{{.Title}}</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/min.css">
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </head>
 <body class="style-minimal">
     <header class="topbar">
@@ -16,16 +15,16 @@
     </header>
 
     <main class="container page">
-        <h1 class="page__title">Scegli un utente</h1>
+        <h1 class="page__title">Peso</h1>
 
-        <section class="page__section">
-            <div class="list">
-                {{range .Users}}
-                <div class="row">
-                    <div>{{.Name}}</div>
-                    <a href="/users/{{.ID}}" class="btn btn-primary">Apri Dashboard</a>
-                </div>
-                {{end}}
+        <section class="page__section" style="text-align: center;">
+            <p style="margin-bottom: 24px; font-size: 1.1em;">
+                Tieni traccia del tuo peso in modo semplice e efficace.
+            </p>
+
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <a href="/login" class="btn btn-primary">Accedi</a>
+                <a href="/register" class="btn" style="border: 1px solid #ddd;">Registrati</a>
             </div>
         </section>
     </main>

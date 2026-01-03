@@ -10,6 +10,7 @@ import (
 	"peso/internal/domain/goal"
 	"peso/internal/domain/user"
 	"peso/internal/domain/weight"
+	"peso/internal/infrastructure/middleware"
 	"peso/internal/interfaces"
 	"strconv"
 	"strings"
@@ -38,33 +39,18 @@ func NewHandlers(weightTracker *application.WeightTracker, goalTracker *applicat
 	}
 }
 
-// HomeHandler serves the main dashboard
+// HomeHandler serves the landing page
 func (h *Handlers) HomeHandler(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userRepo.FindActive()
-	if err != nil {
-		writeError(h.logger, w, r, http.StatusInternalServerError, "Failed to load users", err)
+	u := middleware.UserFromContext(r.Context())
+	if u != nil {
+		http.Redirect(w, r, "/users/"+u.ID().String(), http.StatusSeeOther)
 		return
-	}
-
-	// Convert User objects to a simple user ID/name list for template
-	type UserView struct {
-		ID   string
-		Name string
-	}
-	var userViews []UserView
-	for _, u := range users {
-		userViews = append(userViews, UserView{
-			ID:   u.ID().String(),
-			Name: u.Name(),
-		})
 	}
 
 	data := struct {
 		Title string
-		Users []UserView
 	}{
 		Title: "Peso - Weight Tracking",
-		Users: userViews,
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "index.html", data); err != nil {
@@ -254,13 +240,19 @@ func (h *Handlers) WeightLatestHandler(w http.ResponseWriter, r *http.Request) {
 
 // UserDashboardHandler serves individual user dashboard
 func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) {
-	userIDStr := r.PathValue("userID")
-
-	userID, err := user.NewUserID(userIDStr)
-	if err != nil {
-		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+	currentUser := middleware.UserFromContext(r.Context())
+	if currentUser == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
+	userIDStr := r.PathValue("userID")
+	if userIDStr != currentUser.ID().String() {
+		http.Redirect(w, r, "/users/"+currentUser.ID().String(), http.StatusSeeOther)
+		return
+	}
+
+	userID := currentUser.ID()
 
 	// Get active goal if exists
 	activeGoal, _ := h.goalTracker.GetActiveGoal(userID)
@@ -284,12 +276,14 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
 
 	data := struct {
 		UserID      string
+		UserName    string
 		ActiveGoal  interface{}
 		Progress    *application.GoalProgress
 		StartWeight interface{}
 		CreatedAt   interface{}
 	}{
-		UserID:      userIDStr,
+		UserID:      userID.String(),
+		UserName:    currentUser.Name(),
 		ActiveGoal:  activeGoal,
 		Progress:    progress,
 		StartWeight: startWeight,

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"peso/internal/domain/goal"
+	"peso/internal/domain/session"
 	"peso/internal/domain/user"
 	"peso/internal/domain/weight"
 )
@@ -12,9 +13,20 @@ import (
 type UserRepository interface {
 	Save(user *user.User) error
 	FindByID(id user.UserID) (*user.User, error)
+	FindByEmail(email string) (*user.User, error)
 	FindByName(name string) (*user.User, error)
 	FindActive() ([]*user.User, error)
 	Exists(id user.UserID) (bool, error)
+	EmailExists(email string) (bool, error)
+}
+
+// SessionRepository defines the interface for session persistence
+type SessionRepository interface {
+	Save(session *session.Session) error
+	FindByToken(token string) (*session.Session, error)
+	DeleteByToken(token string) error
+	DeleteByUserID(userID user.UserID) error
+	DeleteExpired() error
 }
 
 // WeightRepository defines the interface for weight persistence
