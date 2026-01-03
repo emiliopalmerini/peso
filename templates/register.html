@@ -19,39 +19,37 @@
 
         <section class="page__section">
             {{if .Error}}
-            <div class="alert alert--error" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;">
-                {{.Error}}
-            </div>
+            <div class="error">{{.Error}}</div>
             {{end}}
 
             <form method="POST" action="/register" class="form">
-                <div class="form__group">
+                <div class="field">
                     <label for="name">Nome</label>
                     <input type="text" id="name" name="name" value="{{.Name}}" required autofocus>
                 </div>
 
-                <div class="form__group">
+                <div class="field">
                     <label for="email">Email</label>
                     <input type="email" id="email" name="email" value="{{.Email}}" required>
                 </div>
 
-                <div class="form__group">
+                <div class="field">
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" required minlength="8">
-                    <small style="color: #666;">Minimo 8 caratteri</small>
+                    <span class="caption">Minimo 8 caratteri</span>
                 </div>
 
-                <div class="form__group">
+                <div class="field">
                     <label for="confirm_password">Conferma Password</label>
                     <input type="password" id="confirm_password" name="confirm_password" required minlength="8">
                 </div>
 
-                <div class="form__actions" style="margin-top: 16px;">
-                    <button type="submit" class="btn btn-primary">Registrati</button>
+                <div class="actions">
+                    <button type="submit" class="btn btn-primary btn--block">Registrati</button>
                 </div>
             </form>
 
-            <p style="margin-top: 24px; text-align: center;">
+            <p class="caption" style="margin-top: 24px; text-align: center;">
                 Hai già un account? <a href="/login">Accedi</a>
             </p>
         </section>

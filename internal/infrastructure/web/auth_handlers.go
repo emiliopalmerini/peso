@@ -2,12 +2,14 @@ package web
 
 import (
 	"encoding/json"
+	"errors"
 	"html/template"
 	"log/slog"
 	"net/http"
 
 	assets "peso"
 	"peso/internal/application"
+	"peso/internal/domain/user"
 	"peso/internal/infrastructure/middleware"
 )
 
@@ -134,11 +136,13 @@ func (h *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	u, sess, err := h.authService.Register(name, email, password)
 	if err != nil {
 		errMsg := "Errore durante la registrazione"
-		switch err {
-		case application.ErrEmailAlreadyExists:
+		switch {
+		case err == application.ErrEmailAlreadyExists:
 			errMsg = "Email già registrata"
-		case application.ErrInvalidEmail:
+		case err == application.ErrInvalidEmail:
 			errMsg = "Email non valida"
+		case errors.Is(err, user.ErrPasswordTooShort):
+			errMsg = "La password deve essere di almeno 8 caratteri"
 		}
 
 		data := struct {
@@ -215,6 +219,10 @@ func (h *AuthHandlers) SetPasswordHandler(w http.ResponseWriter, r *http.Request
 
 	u, sess, err := h.authService.SetPassword(email, password)
 	if err != nil {
+		errMsg := "Errore durante l'impostazione della password"
+		if errors.Is(err, user.ErrPasswordTooShort) {
+			errMsg = "La password deve essere di almeno 8 caratteri"
+		}
 		data := struct {
 			Title string
 			Email string
@@ -222,7 +230,7 @@ func (h *AuthHandlers) SetPasswordHandler(w http.ResponseWriter, r *http.Request
 		}{
 			Title: "Imposta Password - Peso",
 			Email: email,
-			Error: "Errore durante l'impostazione della password",
+			Error: errMsg,
 		}
 		w.WriteHeader(http.StatusBadRequest)
 		h.templates.ExecuteTemplate(w, "set_password.html", data)
