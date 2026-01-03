@@ -3,8 +3,8 @@
   <input type="hidden" name="user_id" value="{{.UserID}}">
 
   <div class="field">
-    <label>Tipo</label>
-    <select name="goal_type" required>
+    <label for="goal-type">Tipo</label>
+    <select id="goal-type" name="goal_type" required>
       <option value="">Seleziona…</option>
       <option value="weight_loss">Perdere peso</option>
       <option value="weight_gain">Aumentare peso</option>
@@ -13,21 +13,21 @@
   </div>
 
   <div class="field">
-    <label>Peso target (kg)</label>
-    <input type="number" name="target_weight" step="0.1" min="10" max="500" required placeholder="70.0">
+    <label for="target-weight">Peso target (kg)</label>
+    <input type="number" id="target-weight" name="target_weight" step="0.1" min="10" max="500" required placeholder="70.0" inputmode="decimal">
     {{if .CurrentWeight}}
     <div class="caption">Peso attuale: {{.CurrentWeight.Value}} kg</div>
     {{end}}
   </div>
 
   <div class="field">
-    <label>Data target</label>
-    <input type="date" name="target_date" min="{{.Today}}" required>
+    <label for="target-date">Data target</label>
+    <input type="date" id="target-date" name="target_date" min="{{.Today}}" required>
   </div>
 
   <div class="field">
-    <label>Note (opzionale)</label>
-    <input type="text" name="notes" maxlength="200" placeholder="Motivazione o dettagli">
+    <label for="goal-notes">Note (opzionale)</label>
+    <input type="text" id="goal-notes" name="notes" maxlength="200" placeholder="Motivazione o dettagli">
   </div>
 
   <div class="actions">

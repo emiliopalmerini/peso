@@ -6,13 +6,13 @@
   <input type="hidden" name="user_id" value="{{.UserID}}">
 
   <div class="field">
-    <label>Peso (kg)</label>
-    <input type="number" name="weight" step="0.1" min="10" max="500" required placeholder="70.0">
+    <label for="weight-input">Peso (kg)</label>
+    <input type="number" id="weight-input" name="weight" step="0.1" min="10" max="500" required placeholder="70.0" inputmode="decimal">
   </div>
 
   <div class="actions">
     <button type="submit" class="btn btn-primary">Salva</button>
-    <button type="button" class="btn" onclick="this.closest('form').outerHTML=''">Annulla</button>
+    <button type="button" class="btn btn-secondary" onclick="this.closest('form').outerHTML=''">Annulla</button>
   </div>
 </form>
 

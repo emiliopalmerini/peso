@@ -39,15 +39,15 @@
         <section class="page__section">
             <div class="chart">
                 <div class="chart__head">
-                    <div style="display:flex; align-items:center; gap:var(--space-3);">
+                    <div>
                         <span>Andamento Peso</span>
                         <span id="goal-badge"
                               hx-get="/users/{{.UserID}}/goal-badge"
                               hx-trigger="load, weight-updated from:body, goal-updated from:body"></span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:var(--space-2);">
-                        <label for="periodSelect" class="caption">Periodo</label>
-                        <select id="periodSelect">
+                    <div>
+                        <label for="periodSelect" class="sr-only">Periodo</label>
+                        <select id="periodSelect" aria-label="Seleziona periodo">
                             <option value="week">1 settimana</option>
                             <option value="month">1 mese</option>
                             <option value="3months" selected>3 mesi</option>
