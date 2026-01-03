@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,7 +17,7 @@ type App struct {
 	config *config.Config
 	logger *slog.Logger
 	db     *persistence.DB
-	router http.Handler
+	server *http.Server
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -48,11 +49,16 @@ func New(cfg *config.Config) (*App, error) {
 
 	router := web.NewRouter(weightTracker, goalTracker, authService, userRepo, logger)
 
+	server := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: router,
+	}
+
 	return &App{
 		config: cfg,
 		logger: logger,
 		db:     db,
-		router: router,
+		server: server,
 	}, nil
 }
 
@@ -62,7 +68,15 @@ func (a *App) Run() error {
 		slog.String("db_path", a.config.DBPath),
 	)
 
-	return http.ListenAndServe(":"+a.config.Port, a.router)
+	if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
+}
+
+func (a *App) Shutdown(ctx context.Context) error {
+	a.logger.Info("server_shutdown")
+	return a.server.Shutdown(ctx)
 }
 
 func (a *App) Close() error {

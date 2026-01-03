@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -250,7 +251,21 @@ func (h *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loadAuthTemplates() *template.Template {
-	tmpl := template.New("")
+	tmpl := template.New("").Funcs(template.FuncMap{
+		"title": func(s string) string {
+			if len(s) == 0 {
+				return s
+			}
+			return string(s[0]-32) + s[1:]
+		},
+		"toJson": func(v interface{}) template.JS {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return template.JS("null")
+			}
+			return template.JS(string(b))
+		},
+	})
 	template.Must(tmpl.ParseFS(assets.FS, "templates/*.html"))
 	return tmpl
 }
