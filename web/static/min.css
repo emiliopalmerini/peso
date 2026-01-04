@@ -1340,16 +1340,16 @@ details .details-content {
 }
 
 /* ==============================================================
-   Period Chips
+   Period Chips - Minimal Style
 ============================================================== */
 .period-chips {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 4px 0;
-  margin: -4px 0;
+  padding: 2px 0;
+  margin: -2px 0;
 }
 
 .period-chips::-webkit-scrollbar {
@@ -1358,27 +1358,26 @@ details .details-content {
 
 .period-chip {
   flex-shrink: 0;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--surface);
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
   color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .period-chip:hover {
-  border-color: var(--accent-600);
   color: var(--text);
+  background: var(--bg-light);
 }
 
 .period-chip--active {
-  background: var(--accent-600);
-  border-color: var(--accent-600);
-  color: var(--accent-contrast);
+  background: var(--text);
+  color: var(--surface);
 }
 
 /* ==============================================================
