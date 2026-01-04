@@ -382,6 +382,9 @@
                 const yMin = Math.max(0, minWeight - padding);
                 const yMax = maxWeight + padding;
 
+                // Simplified view for long periods
+                const isLongPeriod = ['6months', 'year', 'all'].includes(currentPeriod);
+
                 const config = {
                     type: 'line',
                     data: {
@@ -390,7 +393,7 @@
                             {
                                 type: 'scatter',
                                 label: 'Misurazioni',
-                                data: rawPoints,
+                                data: isLongPeriod ? [] : rawPoints,
                                 parsing: { xAxisKey: 'x', yAxisKey: 'y' },
                                 showLine: false,
                                 pointRadius: 3,
@@ -404,12 +407,9 @@
                                 data: avgValues,
                                 borderColor: 'rgb(17, 17, 17)',
                                 backgroundColor: 'rgba(17, 17, 17, 0.05)',
-                                tension: 0.3,
-                                pointRadius: 4,
-                                pointHoverRadius: 6,
-                                pointBorderWidth: 2,
-                                pointBackgroundColor: '#fff',
-                                pointBorderColor: 'rgb(17, 17, 17)',
+                                tension: isLongPeriod ? 0.4 : 0.3,
+                                pointRadius: 0,
+                                pointHoverRadius: 0,
                                 fill: true
                             },
                             {
@@ -468,8 +468,9 @@
 
                 if (chart) {
                     chart.data.labels = labels;
-                    chart.data.datasets[0].data = rawPoints;
+                    chart.data.datasets[0].data = isLongPeriod ? [] : rawPoints;
                     chart.data.datasets[1].data = avgValues;
+                    chart.data.datasets[1].tension = isLongPeriod ? 0.4 : 0.3;
                     const goalLineData = (goal && labels.length > 0) ? [{ x: labels[0], y: parseFloat(goal.targetWeight) }, { x: labels[labels.length - 1], y: parseFloat(goal.targetWeight) }] : [];
                     chart.data.datasets[2].data = goalLineData;
                     chart.options.scales.y.min = yMin;
