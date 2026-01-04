@@ -428,18 +428,22 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Build view models
 	type Row struct {
-		Date  string
-		Value string
-		Unit  string
-		Notes string
+		ID     string
+		UserID string
+		Date   string
+		Value  string
+		Unit   string
+		Notes  string
 	}
 	var rows []Row
 	for _, wgt := range weights {
 		rows = append(rows, Row{
-			Date:  wgt.MeasuredAt().Format("02/01/2006"),
-			Value: fmt.Sprintf("%.1f", wgt.Value().Float64()),
-			Unit:  wgt.Unit().String(),
-			Notes: wgt.Notes(),
+			ID:     wgt.ID().String(),
+			UserID: userIDStr,
+			Date:   wgt.MeasuredAt().Format("02/01/2006"),
+			Value:  fmt.Sprintf("%.1f", wgt.Value().Float64()),
+			Unit:   wgt.Unit().String(),
+			Notes:  wgt.Notes(),
 		})
 	}
 
@@ -451,6 +455,32 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 		writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
 		return
 	}
+}
+
+// DeleteWeightHandler handles weight deletion
+func (h *Handlers) DeleteWeightHandler(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("userID")
+	weightIDStr := r.PathValue("weightID")
+
+	userID, err := user.NewUserID(userIDStr)
+	if err != nil {
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+		return
+	}
+
+	weightID, err := weight.NewWeightID(weightIDStr)
+	if err != nil {
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid weight ID", err)
+		return
+	}
+
+	if err := h.weightTracker.DeleteWeight(userID, weightID); err != nil {
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Failed to delete weight", err)
+		return
+	}
+
+	w.Header().Set("HX-Trigger", "weight-updated")
+	w.WriteHeader(http.StatusOK)
 }
 
 // WeightFormHandler serves the weight entry form
@@ -539,6 +569,106 @@ func (h *Handlers) GoalBadgeHandler(w http.ResponseWriter, r *http.Request) {
 			out.WeightToLose = fmt.Sprintf("%.1f", p.WeightToLose.Float64())
 			out.DaysRemaining = p.DaysRemaining
 		}
+	}
+}
+
+// StatHeroHandler returns the hero stat card with current weight and trend
+func (h *Handlers) StatHeroHandler(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("userID")
+	userID, err := user.NewUserID(userIDStr)
+	if err != nil {
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+		return
+	}
+
+	type vm struct {
+		HasData       bool
+		CurrentWeight string
+		Unit          string
+		LastDate      string
+		LastTime      string
+		TrendValue    string
+		TrendClass    string
+	}
+
+	out := vm{}
+
+	latest, err := h.weightTracker.GetLatestWeight(userID)
+	if err == nil && latest != nil {
+		out.HasData = true
+		out.CurrentWeight = fmt.Sprintf("%.1f", latest.Value().Float64())
+		out.Unit = latest.Unit().String()
+		out.LastDate = latest.MeasuredAt().Format("02/01")
+		out.LastTime = latest.MeasuredAt().Format("15:04")
+
+		// Calculate 7-day trend
+		weights, _ := h.weightTracker.GetWeightHistory(userID, application.TimePeriodLastWeek)
+		if len(weights) >= 2 {
+			oldest := weights[len(weights)-1].Value().Float64()
+			newest := weights[0].Value().Float64()
+			diff := newest - oldest
+			if diff < -0.1 {
+				out.TrendValue = fmt.Sprintf("%.1f", diff)
+				out.TrendClass = "stat-hero__trend--down"
+			} else if diff > 0.1 {
+				out.TrendValue = fmt.Sprintf("+%.1f", diff)
+				out.TrendClass = "stat-hero__trend--up"
+			} else {
+				out.TrendValue = "0.0"
+				out.TrendClass = "stat-hero__trend--neutral"
+			}
+		}
+	}
+
+	if err := h.templates.ExecuteTemplate(w, "partials_stat_hero.html", out); err != nil {
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
+		return
+	}
+}
+
+// StatPillsHandler returns the stat pills with goal and average
+func (h *Handlers) StatPillsHandler(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("userID")
+	userID, err := user.NewUserID(userIDStr)
+	if err != nil {
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+		return
+	}
+
+	type vm struct {
+		GoalWeight   string
+		GoalUnit     string
+		HasGoal      bool
+		WeekAvg      string
+		WeekAvgUnit  string
+		HasWeekAvg   bool
+	}
+
+	out := vm{}
+
+	// Get goal info
+	if g, _ := h.goalTracker.GetActiveGoal(userID); g != nil {
+		out.HasGoal = true
+		out.GoalWeight = fmt.Sprintf("%.1f", g.TargetWeight().Float64())
+		out.GoalUnit = g.Unit().String()
+	}
+
+	// Calculate 7-day average
+	weights, _ := h.weightTracker.GetWeightHistory(userID, application.TimePeriodLastWeek)
+	if len(weights) > 0 {
+		var sum float64
+		for _, wgt := range weights {
+			sum += wgt.Value().Float64()
+		}
+		avg := sum / float64(len(weights))
+		out.HasWeekAvg = true
+		out.WeekAvg = fmt.Sprintf("%.1f", avg)
+		out.WeekAvgUnit = weights[0].Unit().String()
+	}
+
+	if err := h.templates.ExecuteTemplate(w, "partials_stat_pills.html", out); err != nil {
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
+		return
 	}
 }
 

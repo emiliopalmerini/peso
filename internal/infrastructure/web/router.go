@@ -66,8 +66,11 @@ func NewRouter(
 	mux.HandleFunc("GET /users/{userID}/goal-form", handlers.GoalFormHandler)
 	mux.HandleFunc("GET /users/{userID}/goal-summary", handlers.GoalSummaryHandler)
 	mux.HandleFunc("GET /users/{userID}/goal-badge", handlers.GoalBadgeHandler)
+	mux.HandleFunc("GET /users/{userID}/stat-hero", handlers.StatHeroHandler)
+	mux.HandleFunc("GET /users/{userID}/stat-pills", handlers.StatPillsHandler)
 
 	mux.HandleFunc("POST /api/weights", handlers.AddWeightHandler)
+	mux.HandleFunc("DELETE /api/weights/{userID}/{weightID}", handlers.DeleteWeightHandler)
 	mux.HandleFunc("GET /api/weights/{userID}", handlers.WeightHistoryHandler)
 	mux.HandleFunc("GET /api/weights/latest/{userID}", handlers.WeightLatestHandler)
 	mux.HandleFunc("POST /api/goals", handlers.AddGoalHandler)

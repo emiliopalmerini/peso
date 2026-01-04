@@ -1,9 +1,21 @@
 {{/* Partial: Recent Weights List (rows only) */}}
 {{ if .Rows }}
   {{ range .Rows }}
-  <div class="row">
-    <div>{{ .Date }}</div>
-    <div>{{ if .Notes }}<span class="caption">{{ .Notes }}</span> · {{ end }}{{ .Value }} {{ .Unit }}</div>
+  <div class="swipe-row">
+    <div class="swipe-row__content row">
+      <div>{{ .Date }}</div>
+      <div>{{ if .Notes }}<span class="caption">{{ .Notes }}</span> · {{ end }}{{ .Value }} {{ .Unit }}</div>
+    </div>
+    <div class="swipe-row__actions">
+      <button class="swipe-row__action swipe-row__action--delete"
+              hx-delete="/api/weights/{{ .UserID }}/{{ .ID }}"
+              hx-confirm="Eliminare questo peso?"
+              hx-swap="none">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+        </svg>
+      </button>
+    </div>
   </div>
   {{ end }}
 {{ else }}

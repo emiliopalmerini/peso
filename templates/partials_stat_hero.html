@@ -1,0 +1,18 @@
+{{if .HasData}}
+  <div class="stat-hero__weight">{{.CurrentWeight}}</div>
+  <div class="stat-hero__unit">{{.Unit}}</div>
+  <div class="stat-hero__meta">
+    <span class="stat-hero__date">{{.LastDate}} &middot; {{.LastTime}}</span>
+    {{if .TrendValue}}
+      <span class="stat-hero__trend {{.TrendClass}}">{{.TrendValue}} kg</span>
+    {{end}}
+  </div>
+{{else}}
+  <div class="stat-hero__empty">
+    <span class="stat-hero__weight">--</span>
+    <div class="stat-hero__unit">kg</div>
+    <div class="stat-hero__meta">
+      <span class="caption">Nessun peso registrato</span>
+    </div>
+  </div>
+{{end}}

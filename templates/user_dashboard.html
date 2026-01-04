@@ -2,9 +2,16 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Dashboard - Peso</title>
+    <meta name="description" content="Track your weight and reach your goals">
+    <meta name="theme-color" content="#111111">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Peso">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/static/icon-192.svg">
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/min.css">
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,8 +28,68 @@
     </header>
 
     <main class="container page">
-        <h1 class="page__title">Dashboard</h1>
+        <!-- Hero Stat Card -->
+        <section class="page__section">
+            <div class="stat-hero" id="stat-hero"
+                 hx-get="/users/{{.UserID}}/stat-hero"
+                 hx-trigger="load, weight-updated from:body"
+                 hx-swap="innerHTML">
+                <div class="skeleton" style="height: 60px; width: 150px; margin: 0 auto;"></div>
+            </div>
+        </section>
 
+        <!-- Stat Pills -->
+        <section class="page__section">
+            <div class="stat-pills" id="stat-pills"
+                 hx-get="/users/{{.UserID}}/stat-pills"
+                 hx-trigger="load, weight-updated from:body, goal-updated from:body"
+                 hx-swap="innerHTML">
+                <div class="stat-pill"><div class="skeleton" style="height: 50px;"></div></div>
+                <div class="stat-pill"><div class="skeleton" style="height: 50px;"></div></div>
+            </div>
+        </section>
+
+        <!-- Goal panel (for goal form) -->
+        <section class="page__section"><div id="panel"></div></section>
+
+        <!-- Weight Chart -->
+        <section class="page__section">
+            <div class="chart">
+                <div class="chart__head">
+                    <div>
+                        <span>Andamento</span>
+                        <span id="goal-badge"
+                              hx-get="/users/{{.UserID}}/goal-badge"
+                              hx-trigger="load, weight-updated from:body, goal-updated from:body"></span>
+                    </div>
+                    <div class="period-chips" id="periodChips">
+                        <button class="period-chip" data-period="week">1S</button>
+                        <button class="period-chip" data-period="month">1M</button>
+                        <button class="period-chip period-chip--active" data-period="3months">3M</button>
+                        <button class="period-chip" data-period="6months">6M</button>
+                        <button class="period-chip" data-period="year">1A</button>
+                        <button class="period-chip" data-period="all">Tutto</button>
+                    </div>
+                </div>
+                <div class="chart__body">
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Weights -->
+        <section class="page__section">
+            <div class="section-header">
+                <span class="section-header__title">Storico</span>
+            </div>
+            <div class="list" id="recent-weights"
+                 hx-get="/users/{{.UserID}}/recent-weights"
+                 hx-trigger="load, weight-updated from:body">
+                <div class="row"><span class="text-muted">Caricamento...</span></div>
+            </div>
+        </section>
+
+        <!-- Goal Summary (collapsible) -->
         <section class="page__section">
             <details>
                 <summary>Obiettivo</summary>
@@ -33,56 +100,240 @@
                 </div>
             </details>
         </section>
-
-        <section class="page__section"><div id="panel"></div></section>
-
-        <section class="page__section">
-            <div class="chart">
-                <div class="chart__head">
-                    <div>
-                        <span>Andamento Peso</span>
-                        <span id="goal-badge"
-                              hx-get="/users/{{.UserID}}/goal-badge"
-                              hx-trigger="load, weight-updated from:body, goal-updated from:body"></span>
-                    </div>
-                    <div>
-                        <label for="periodSelect" class="sr-only">Periodo</label>
-                        <select id="periodSelect" aria-label="Seleziona periodo">
-                            <option value="week">1 settimana</option>
-                            <option value="month">1 mese</option>
-                            <option value="3months" selected>3 mesi</option>
-                            <option value="6months">6 mesi</option>
-                            <option value="year">1 anno</option>
-                            <option value="all">Tutto</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="chart__body">
-                    <canvas id="weightChart"></canvas>
-                </div>
-            </div>
-        </section>
-
-        <section class="page__section">
-            <div id="weight-form"
-                 hx-get="/users/{{.UserID}}/weight-form"
-                 hx-trigger="load"></div>
-        </section>
-
-        <section class="page__section">
-            <div class="list" id="recent-weights"
-                 hx-get="/users/{{.UserID}}/recent-weights"
-                 hx-trigger="load, weight-updated from:body">
-                <div class="row"><span class="text-muted">Caricamento...</span></div>
-            </div>
-        </section>
     </main>
 
+    <!-- FAB -->
+    <button class="fab" id="fab" aria-label="Aggiungi peso">
+        <svg class="fab__icon" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+
+    <!-- Bottom Sheet -->
+    <div class="bottom-sheet-backdrop" id="sheetBackdrop"></div>
+    <div class="bottom-sheet" id="bottomSheet">
+        <div class="bottom-sheet__handle"></div>
+        <div class="bottom-sheet__header">
+            <h2 class="bottom-sheet__title">Registra peso</h2>
+        </div>
+        <div class="bottom-sheet__content">
+            <div class="weight-input-display">
+                <span class="weight-input-display__value" id="weightDisplay">--.-</span>
+                <span class="weight-input-display__unit">kg</span>
+                <div class="weight-input-display__date" id="dateDisplay">Oggi</div>
+            </div>
+            <div class="numpad">
+                <button class="numpad__key" data-key="1">1</button>
+                <button class="numpad__key" data-key="2">2</button>
+                <button class="numpad__key" data-key="3">3</button>
+                <button class="numpad__key" data-key="4">4</button>
+                <button class="numpad__key" data-key="5">5</button>
+                <button class="numpad__key" data-key="6">6</button>
+                <button class="numpad__key" data-key="7">7</button>
+                <button class="numpad__key" data-key="8">8</button>
+                <button class="numpad__key" data-key="9">9</button>
+                <button class="numpad__key" data-key=".">.</button>
+                <button class="numpad__key" data-key="0">0</button>
+                <button class="numpad__key" data-key="backspace">
+                    <svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+                </button>
+            </div>
+            <button class="btn btn-primary btn--block" id="saveWeight">Salva</button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Pull to Refresh Indicator -->
+    <div class="pull-indicator" id="pullIndicator">
+        <svg class="pull-indicator__icon" viewBox="0 0 24 24">
+            <path d="M23 4v6h-6M1 20v-6h6"></path>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+    </div>
+
     <script>
+        // ============================================================
+        // State
+        // ============================================================
         let chart;
+        let currentPeriod = '3months';
+        let weightInput = '';
+        let lastWeight = null;
+        const userId = '{{.UserID}}';
         const ctx = document.getElementById('weightChart').getContext('2d');
         const goal = {{ if .ActiveGoal }}{{ if and .CreatedAt .StartWeight }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}", createdAt: "{{.CreatedAt}}", startWeight: {{.StartWeight}} }{{ else }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}" }{{ end }}{{ else }} null {{ end }};
 
+        // ============================================================
+        // Toast Notifications
+        // ============================================================
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast--${type}`;
+            toast.innerHTML = `<span class="toast__message">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('toast--out');
+                setTimeout(() => toast.remove(), 200);
+            }, duration);
+        }
+
+        // ============================================================
+        // Bottom Sheet
+        // ============================================================
+        const fab = document.getElementById('fab');
+        const backdrop = document.getElementById('sheetBackdrop');
+        const sheet = document.getElementById('bottomSheet');
+        const weightDisplay = document.getElementById('weightDisplay');
+        const saveBtn = document.getElementById('saveWeight');
+
+        function openSheet() {
+            backdrop.classList.add('bottom-sheet-backdrop--open');
+            sheet.classList.add('bottom-sheet--open');
+            document.body.style.overflow = 'hidden';
+            // Pre-fill with last weight if available
+            if (lastWeight) {
+                weightInput = lastWeight.toString();
+                updateWeightDisplay();
+            }
+        }
+
+        function closeSheet() {
+            backdrop.classList.remove('bottom-sheet-backdrop--open');
+            sheet.classList.remove('bottom-sheet--open');
+            document.body.style.overflow = '';
+            weightInput = '';
+            updateWeightDisplay();
+        }
+
+        function updateWeightDisplay() {
+            weightDisplay.textContent = weightInput || '--.-';
+        }
+
+        fab.addEventListener('click', openSheet);
+        backdrop.addEventListener('click', closeSheet);
+
+        // Numpad handling
+        document.querySelectorAll('.numpad__key').forEach(key => {
+            key.addEventListener('click', () => {
+                const value = key.dataset.key;
+                if (value === 'backspace') {
+                    weightInput = weightInput.slice(0, -1);
+                } else if (value === '.') {
+                    if (!weightInput.includes('.') && weightInput.length > 0) {
+                        weightInput += '.';
+                    }
+                } else {
+                    // Limit to format XXX.X
+                    const parts = weightInput.split('.');
+                    if (parts.length === 2 && parts[1].length >= 1) return;
+                    if (parts.length === 1 && parts[0].length >= 3 && !weightInput.includes('.')) return;
+                    weightInput += value;
+                }
+                updateWeightDisplay();
+            });
+        });
+
+        // Save weight
+        saveBtn.addEventListener('click', async () => {
+            const weight = parseFloat(weightInput);
+            if (isNaN(weight) || weight < 10 || weight > 500) {
+                showToast('Inserisci un peso valido (10-500 kg)', 'error');
+                return;
+            }
+            try {
+                const formData = new FormData();
+                formData.append('user_id', userId);
+                formData.append('weight', weight);
+                const response = await fetch('/api/weights', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    closeSheet();
+                    fab.classList.add('fab--success');
+                    setTimeout(() => fab.classList.remove('fab--success'), 600);
+                    showToast('Peso salvato', 'success');
+                    document.body.dispatchEvent(new CustomEvent('weight-updated'));
+                    lastWeight = weight;
+                } else {
+                    showToast('Errore nel salvataggio', 'error');
+                }
+            } catch (e) {
+                showToast('Errore di connessione', 'error');
+            }
+        });
+
+        // ============================================================
+        // FAB scroll behavior
+        // ============================================================
+        let lastScrollY = 0;
+        let fabHidden = false;
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            if (currentScrollY > lastScrollY && currentScrollY > 100 && !fabHidden) {
+                fab.classList.add('fab--hidden');
+                fabHidden = true;
+            } else if (currentScrollY < lastScrollY && fabHidden) {
+                fab.classList.remove('fab--hidden');
+                fabHidden = false;
+            }
+            lastScrollY = currentScrollY;
+        }, { passive: true });
+
+        // ============================================================
+        // Period Chips
+        // ============================================================
+        document.getElementById('periodChips').addEventListener('click', (e) => {
+            const chip = e.target.closest('.period-chip');
+            if (!chip) return;
+            document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('period-chip--active'));
+            chip.classList.add('period-chip--active');
+            currentPeriod = chip.dataset.period;
+            renderChart();
+        });
+
+        // ============================================================
+        // Pull to Refresh
+        // ============================================================
+        let pullStartY = 0;
+        let isPulling = false;
+        const pullIndicator = document.getElementById('pullIndicator');
+
+        document.addEventListener('touchstart', (e) => {
+            if (window.scrollY === 0) {
+                pullStartY = e.touches[0].clientY;
+                isPulling = true;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isPulling) return;
+            const pullDistance = e.touches[0].clientY - pullStartY;
+            if (pullDistance > 60 && window.scrollY === 0) {
+                pullIndicator.classList.add('pull-indicator--visible');
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+            if (pullIndicator.classList.contains('pull-indicator--visible')) {
+                pullIndicator.classList.add('pull-indicator--refreshing');
+                // Trigger refresh
+                document.body.dispatchEvent(new CustomEvent('weight-updated'));
+                renderChart();
+                setTimeout(() => {
+                    pullIndicator.classList.remove('pull-indicator--visible', 'pull-indicator--refreshing');
+                }, 1000);
+            }
+            isPulling = false;
+        }, { passive: true });
+
+        // ============================================================
+        // Chart
+        // ============================================================
         function itToDate(itDate) {
             const [d,m,y] = itDate.split('/');
             return new Date(y, m-1, d);
@@ -95,95 +346,29 @@
                 if (!groups.has(d)) groups.set(d, []);
                 groups.get(d).push(w.value);
             }
-            const dates = Array.from(groups.keys()).sort((a, b) => {
-                const dateA = itToDate(a);
-                const dateB = itToDate(b);
-                return dateA - dateB;
-            });
-            const averaged = dates.map(d => {
+            const dates = Array.from(groups.keys()).sort((a, b) => itToDate(a) - itToDate(b));
+            return dates.map(d => {
                 const vals = groups.get(d);
-                const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
-                return { date: d, value: avg };
+                return { date: d, value: vals.reduce((a,b)=>a+b,0)/vals.length };
             });
-            return averaged;
-        }
-
-        function buildPlanPoints(goalInfo, chartLabels, averaged) {
-            if (!goalInfo || !goalInfo.createdAt || goalInfo.startWeight === undefined) {
-                return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
-            }
-            const start = itToDate(goalInfo.createdAt);
-            const target = itToDate(goalInfo.targetDate);
-            if (isNaN(start) || isNaN(target) || target <= start) {
-                return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
-            }
-
-            const targetWeight = parseFloat(goalInfo.targetWeight);
-            const startWeight = goalInfo.startWeight;
-
-            if (chartLabels.length === 0) {
-                return { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
-            }
-
-            let centerLine = [];
-            const firstChartDate = itToDate(chartLabels[0]);
-            const lastChartDate = itToDate(chartLabels[chartLabels.length - 1]);
-
-            const totalDays = (target - start) / (1000 * 60 * 60 * 24);
-            const totalWeightChange = Math.abs(targetWeight - startWeight);
-            const tolerance = Math.max(0.5, totalWeightChange * 0.05);
-
-            if (start >= firstChartDate && start <= lastChartDate) {
-                centerLine.push({ x: goalInfo.createdAt, y: startWeight });
-            } else if (start < firstChartDate) {
-                const daysToFirstChart = (firstChartDate - start) / (1000 * 60 * 60 * 24);
-                const weightAtFirstChart = startWeight + ((targetWeight - startWeight) * daysToFirstChart / totalDays);
-                centerLine.push({ x: chartLabels[0], y: weightAtFirstChart });
-            }
-
-            if (target <= lastChartDate || (target - lastChartDate) / (1000 * 60 * 60 * 24) <= 30) {
-                centerLine.push({ x: goalInfo.targetDate, y: targetWeight });
-            } else {
-                const daysToLastChart = (lastChartDate - start) / (1000 * 60 * 60 * 24);
-                const weightAtLastChart = startWeight + ((targetWeight - startWeight) * daysToLastChart / totalDays);
-                centerLine.push({ x: chartLabels[chartLabels.length - 1], y: weightAtLastChart });
-            }
-
-            const upperBound = centerLine.map(point => ({ x: point.x, y: point.y + tolerance }));
-            const lowerBound = centerLine.map(point => ({ x: point.x, y: point.y - tolerance }));
-
-            let colors = { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' };
-
-            if (averaged.length > 0) {
-                const latestWeight = averaged[averaged.length - 1].value;
-                const latestDate = itToDate(averaged[averaged.length - 1].date);
-                const daysSinceStart = (latestDate - start) / (1000 * 60 * 60 * 24);
-                const expectedWeight = startWeight + ((targetWeight - startWeight) * daysSinceStart / totalDays);
-                const deviation = Math.abs(latestWeight - expectedWeight);
-
-                if (deviation <= tolerance) {
-                    colors = { zone: 'rgba(59, 130, 246, 0.1)', line: 'rgb(59, 130, 246)' };
-                } else {
-                    colors = { zone: 'rgba(239, 68, 68, 0.1)', line: 'rgb(239, 68, 68)' };
-                }
-            }
-
-            return { centerLine, upperBound, lowerBound, colors };
         }
 
         async function renderChart() {
             try {
-                const periodEl = document.getElementById('periodSelect');
-                const period = periodEl ? periodEl.value : '3months';
                 const [data, latest] = await Promise.all([
-                    fetch(`/api/weights/{{.UserID}}?period=${period}`).then(r=>r.json()).catch(()=>null),
-                    fetch(`/api/weights/latest/{{.UserID}}`).then(r=>r.ok?r.json():null).catch(()=>null)
+                    fetch(`/api/weights/${userId}?period=${currentPeriod}`).then(r=>r.json()).catch(()=>null),
+                    fetch(`/api/weights/latest/${userId}`).then(r=>r.ok?r.json():null).catch(()=>null)
                 ]);
+
+                if (latest && latest.value) {
+                    lastWeight = latest.value;
+                }
+
                 if (!data || !Array.isArray(data) || data.length === 0) {
-                    const body = document.querySelector('.chart__body');
-                    if (body) body.innerHTML = '<div class="empty-state">Nessun dato disponibile</div>';
+                    document.querySelector('.chart__body').innerHTML = '<div class="empty-state">Nessun dato</div>';
                     return;
                 }
+
                 const averaged = aggregateDailyAverage(data);
                 const labels = averaged.map(p => p.date);
                 const avgValues = averaged.map(p => p.value);
@@ -197,8 +382,6 @@
                 const yMin = Math.max(0, minWeight - padding);
                 const yMax = maxWeight + padding;
 
-                const planData = goal ? buildPlanPoints(goal, labels, averaged) : { centerLine: [], upperBound: [], lowerBound: [], colors: { zone: 'rgba(156, 163, 175, 0.1)', line: 'rgb(156, 163, 175)' } };
-
                 const config = {
                     type: 'line',
                     data: {
@@ -211,22 +394,23 @@
                                 parsing: { xAxisKey: 'x', yAxisKey: 'y' },
                                 showLine: false,
                                 pointRadius: 3,
-                                pointHoverRadius: 4,
+                                pointHoverRadius: 5,
                                 pointBorderWidth: 0,
                                 pointBackgroundColor: 'rgb(17, 17, 17)'
                             },
                             {
                                 type: 'line',
-                                label: 'Media giornaliera',
+                                label: 'Media',
                                 data: avgValues,
                                 borderColor: 'rgb(17, 17, 17)',
                                 backgroundColor: 'rgba(17, 17, 17, 0.05)',
-                                tension: 0.2,
-                                pointRadius: 5,
+                                tension: 0.3,
+                                pointRadius: 4,
                                 pointHoverRadius: 6,
                                 pointBorderWidth: 2,
                                 pointBackgroundColor: '#fff',
-                                pointBorderColor: 'rgb(17, 17, 17)'
+                                pointBorderColor: 'rgb(17, 17, 17)',
+                                fill: true
                             },
                             {
                                 type: 'line',
@@ -238,26 +422,30 @@
                                 borderWidth: 2,
                                 borderDash: [5, 5],
                                 pointRadius: 0,
-                                showLine: true,
-                                xAxisID: 'x',
-                                yAxisID: 'y'
+                                showLine: true
                             }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: { mode: 'nearest', intersect: false },
                         plugins: {
                             legend: { display: false },
                             tooltip: {
+                                backgroundColor: 'rgb(17, 17, 17)',
+                                titleFont: { size: 12 },
+                                bodyFont: { size: 14, weight: 'bold' },
+                                padding: 10,
+                                cornerRadius: 8,
                                 callbacks: {
                                     title: (items) => items[0]?.label || '',
                                     label: (ctx) => {
                                         if (ctx.dataset.type === 'scatter') {
-                                            const time = ctx.raw && ctx.raw.t ? ctx.raw.t : '';
-                                            return time ? `Ora ${time} · ${ctx.formattedValue} kg` : `${ctx.formattedValue} kg`;
+                                            const time = ctx.raw?.t || '';
+                                            return time ? `${ctx.formattedValue} kg (${time})` : `${ctx.formattedValue} kg`;
                                         }
-                                        return `Media ${ctx.formattedValue} kg`;
+                                        return `Media: ${ctx.formattedValue} kg`;
                                     }
                                 }
                             }
@@ -265,11 +453,15 @@
                         scales: {
                             y: {
                                 beginAtZero: false,
-                                grid: { color: 'rgba(0,0,0,0.06)' },
+                                grid: { color: 'rgba(0,0,0,0.05)' },
                                 min: yMin,
-                                max: yMax
+                                max: yMax,
+                                ticks: { font: { size: 11 } }
                             },
-                            x: { grid: { display: false } }
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 11 }, maxTicksLimit: 6 }
+                            }
                         }
                     }
                 };
@@ -278,47 +470,44 @@
                     chart.data.labels = labels;
                     chart.data.datasets[0].data = rawPoints;
                     chart.data.datasets[1].data = avgValues;
-
                     const goalLineData = (goal && labels.length > 0) ? [{ x: labels[0], y: parseFloat(goal.targetWeight) }, { x: labels[labels.length - 1], y: parseFloat(goal.targetWeight) }] : [];
-                    if (chart.data.datasets[2]) {
-                        chart.data.datasets[2].data = goalLineData;
-                    } else {
-                        chart.data.datasets.push({
-                            type: 'line',
-                            label: 'Obiettivo',
-                            data: goalLineData,
-                            parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                            borderColor: 'rgb(156, 163, 175)',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            showLine: true,
-                            xAxisID: 'x',
-                            yAxisID: 'y'
-                        });
-                    }
-
+                    chart.data.datasets[2].data = goalLineData;
                     chart.options.scales.y.min = yMin;
                     chart.options.scales.y.max = yMax;
-                    chart.update();
+                    chart.update('none');
                 } else {
                     chart = new Chart(ctx, config);
                 }
             } catch (e) {
-                console.error('Error loading chart data:', e);
-                const body = document.querySelector('.chart__body');
-                if (body) body.innerHTML = '<div class="empty-state">Errore nel caricamento</div>';
+                console.error('Chart error:', e);
+                document.querySelector('.chart__body').innerHTML = '<div class="empty-state">Errore caricamento</div>';
             }
         }
 
-        document.addEventListener('DOMContentLoaded', renderChart);
-        document.body.addEventListener('weight-updated', renderChart);
-        document.addEventListener('change', (e) => {
-            if (e.target && e.target.id === 'periodSelect') {
-                renderChart();
+        // ============================================================
+        // HTMX Event Handling
+        // ============================================================
+        document.body.addEventListener('htmx:afterRequest', (e) => {
+            if (e.detail.successful && e.detail.verb === 'delete') {
+                showToast('Peso eliminato', 'success');
             }
         });
+
+        document.body.addEventListener('htmx:responseError', (e) => {
+            showToast('Errore durante l\'operazione', 'error');
+        });
+
+        // ============================================================
+        // Init
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', renderChart);
+        document.body.addEventListener('weight-updated', renderChart);
+
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/service-worker.js')
+                .catch((err) => console.log('SW registration failed:', err));
+        }
     </script>
 </body>
 </html>
