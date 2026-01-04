@@ -478,6 +478,19 @@
         }
 
         // ============================================================
+        // HTMX Event Handling
+        // ============================================================
+        document.body.addEventListener('htmx:afterRequest', (e) => {
+            if (e.detail.successful && e.detail.verb === 'delete') {
+                showToast('Peso eliminato', 'success');
+            }
+        });
+
+        document.body.addEventListener('htmx:responseError', (e) => {
+            showToast('Errore durante l\'operazione', 'error');
+        });
+
+        // ============================================================
         // Init
         // ============================================================
         document.addEventListener('DOMContentLoaded', renderChart);
