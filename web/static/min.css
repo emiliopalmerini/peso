@@ -99,12 +99,12 @@ body {
 }
 
 .page {
-  padding-block: var(--space-5);
-  padding-bottom: calc(var(--space-6) + var(--safe-bottom));
+  padding-block: var(--space-3);
+  padding-bottom: calc(var(--space-5) + var(--safe-bottom));
 }
 
 .page__section {
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
 }
 
 .page__section:first-of-type {
@@ -127,11 +127,11 @@ body {
   }
 
   .page {
-    padding-block: var(--space-6);
+    padding-block: var(--space-4);
   }
 
   .page__section {
-    margin-top: var(--space-5);
+    margin-top: var(--space-4);
   }
 
   .page__title {
@@ -658,13 +658,9 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 }
 
 /* ==============================================================
-   List Component (Mobile-Optimized)
+   List Component (Mobile-Optimized) - Cardless Design
 ============================================================== */
 .list {
-  background: var(--surface);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
   overflow: hidden;
 }
 
@@ -674,59 +670,62 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-4);
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--line);
   transition: background-color 0.15s ease;
-  min-height: 52px;
+  min-height: 44px;
 }
 
 .list .row:last-child { border-bottom: none; }
 
 .list .row:active {
   background: var(--bg-light);
+  margin-inline: calc(var(--space-3) * -1);
+  padding-inline: var(--space-3);
 }
 
 @media (hover: hover) {
-  .list .row:hover { background: var(--bg-light); }
+  .list .row:hover {
+    background: var(--bg-light);
+    margin-inline: calc(var(--space-3) * -1);
+    padding-inline: var(--space-3);
+  }
 }
 
 .list .row .name {
   font-weight: 500;
   color: var(--text);
+  font-size: 0.9375rem;
 }
 
 .list .row .value {
-  font-weight: 600;
-  color: var(--accent);
+  font-weight: 700;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
 }
 
 .list .row .date {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
 /* ==============================================================
-   Chart Component (Mobile-Optimized)
+   Chart Component (Mobile-Optimized) - Cardless Design
 ============================================================== */
 .chart {
-  background: var(--surface);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
   overflow: hidden;
 }
 
 .chart__head {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--line);
+  padding: var(--space-2) 0;
   font-weight: 600;
-  font-size: 0.9375rem;
-  color: var(--text);
+  font-size: 0.875rem;
+  color: var(--muted);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .chart__head > div {
@@ -734,6 +733,12 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
+}
+
+.chart__head > div:first-child {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .chart__head select {
@@ -745,9 +750,9 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 }
 
 .chart__body {
-  padding: var(--space-3);
-  height: 280px;
-  min-height: 240px;
+  padding: 0;
+  height: 220px;
+  min-height: 200px;
 }
 
 /* Tablet and up */
@@ -756,72 +761,70 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-4);
   }
 }
 
 @media (min-width: 640px) {
   .chart__body {
-    height: 320px;
-    padding: var(--space-4);
+    height: 260px;
   }
 }
 
 @media (min-width: 768px) {
   .chart__body {
-    height: 360px;
+    height: 300px;
   }
 }
 
 /* ==============================================================
-   Details/Summary (Accordion)
+   Details/Summary (Accordion) - Cardless Design
 ============================================================== */
 details {
-  background: var(--surface);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
   overflow: hidden;
+  border-top: 1px solid var(--line);
 }
 
 details summary {
-  padding: var(--space-4);
+  padding: var(--space-3) 0;
   font-weight: 600;
-  color: var(--text);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
   cursor: pointer;
   user-select: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: background-color 0.15s ease;
-  min-height: 52px;
+  transition: color 0.15s ease;
+  min-height: 44px;
   list-style: none;
 }
 
 details summary::-webkit-details-marker { display: none; }
 
-details summary:active { background: var(--bg-light); }
+details summary:active { color: var(--text); }
 
 @media (hover: hover) {
-  details summary:hover { background: var(--bg-light); }
+  details summary:hover { color: var(--text); }
 }
 
 details summary::after {
   content: "";
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
   transform: rotate(-45deg);
   transition: transform 0.2s ease;
   flex-shrink: 0;
 }
 
 details[open] summary::after { transform: rotate(45deg); }
-details[open] summary { border-bottom: 1px solid var(--line); }
+details[open] summary { border-bottom: none; }
 
 details .details-content {
-  padding: var(--space-4);
+  padding: 0 0 var(--space-3);
 }
 
 /* ==============================================================
@@ -1255,28 +1258,24 @@ details .details-content {
 }
 
 /* ==============================================================
-   Stat Cards (Dashboard)
+   Stat Cards (Dashboard) - Cardless Design
 ============================================================== */
 .stat-hero {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  padding: var(--space-5);
+  padding: var(--space-4) 0;
   text-align: center;
-  box-shadow: var(--shadow-md);
 }
 
 .stat-hero__value {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 3.5rem;
+  font-weight: 800;
   color: var(--text);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
 .stat-hero__unit {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 500;
   color: var(--muted);
   margin-left: var(--space-1);
@@ -1286,77 +1285,71 @@ details .details-content {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  margin-left: var(--space-3);
-  padding: 4px 10px;
-  border-radius: 20px;
+  margin-left: var(--space-2);
+  padding: 0;
+  border-radius: 0;
+  background: none;
 }
 
 .stat-hero__trend--down {
-  background: rgba(16, 185, 129, 0.1);
   color: #059669;
 }
 
 .stat-hero__trend--up {
-  background: rgba(239, 68, 68, 0.1);
   color: #DC2626;
 }
 
 .stat-hero__trend--neutral {
-  background: var(--bg-light);
   color: var(--muted);
 }
 
 .stat-hero__meta {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--muted);
-  margin-top: var(--space-2);
+  margin-top: var(--space-1);
 }
 
-/* Stat pills grid */
+/* Stat pills - inline compact style */
 .stat-pills {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
+  display: flex;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-2) 0;
 }
 
 .stat-pill {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  padding: var(--space-4);
   text-align: center;
-  box-shadow: var(--shadow-sm);
 }
 
 .stat-pill__label {
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.6875rem;
+  font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-1);
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
 }
 
 .stat-pill__value {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 
 /* ==============================================================
-   Period Chips
+   Period Chips - Minimal Style
 ============================================================== */
 .period-chips {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 4px 0;
-  margin: -4px 0;
+  padding: 2px 0;
+  margin: -2px 0;
 }
 
 .period-chips::-webkit-scrollbar {
@@ -1365,27 +1358,26 @@ details .details-content {
 
 .period-chip {
   flex-shrink: 0;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--surface);
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
   color: var(--muted);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .period-chip:hover {
-  border-color: var(--accent-600);
   color: var(--text);
+  background: var(--bg-light);
 }
 
 .period-chip--active {
-  background: var(--accent-600);
-  border-color: var(--accent-600);
-  color: var(--accent-contrast);
+  background: var(--text);
+  color: var(--surface);
 }
 
 /* ==============================================================
@@ -1487,25 +1479,25 @@ details .details-content {
 }
 
 /* ==============================================================
-   Section Headers (for list headers)
+   Section Headers (for list headers) - Compact Style
 ============================================================== */
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) 0;
+  padding: var(--space-2) 0;
 }
 
 .section-header__title {
-  font-size: 0.875rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .section-header__action {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--accent-600);
   text-decoration: none;
