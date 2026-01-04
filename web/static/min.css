@@ -1266,19 +1266,20 @@ details .details-content {
 }
 
 .stat-hero__value {
-  font-size: 3.5rem;
+  font-size: 4rem;
   font-weight: 800;
   color: var(--text);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   line-height: 1;
 }
 
 .stat-hero__unit {
-  font-size: 1.5rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 400;
   color: var(--muted);
-  margin-left: var(--space-1);
+  margin-left: 2px;
+  opacity: 0.5;
 }
 
 .stat-hero__trend {
