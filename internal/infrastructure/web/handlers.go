@@ -266,7 +266,7 @@ func (h *Handlers) UserDashboardHandler(w http.ResponseWriter, r *http.Request) 
 		if err == nil {
 			progress = &p
 		}
-		
+
 		// Get starting weight for trajectory calculation
 		if startWeightRecord, err := h.goalTracker.GetStartingWeightForGoal(userID, activeGoal.CreatedAt()); err == nil {
 			startWeight = startWeightRecord.Value().Float64()
@@ -636,12 +636,12 @@ func (h *Handlers) StatPillsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type vm struct {
-		GoalWeight   string
-		GoalUnit     string
-		HasGoal      bool
-		WeekAvg      string
-		WeekAvgUnit  string
-		HasWeekAvg   bool
+		GoalWeight  string
+		GoalUnit    string
+		HasGoal     bool
+		WeekAvg     string
+		WeekAvgUnit string
+		HasWeekAvg  bool
 	}
 
 	out := vm{}

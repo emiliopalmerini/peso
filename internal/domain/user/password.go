@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	bcryptCost      = 12
-	minPasswordLen  = 8
+	bcryptCost     = 12
+	minPasswordLen = 8
 )
 
 var (

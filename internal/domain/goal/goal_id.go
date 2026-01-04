@@ -16,7 +16,7 @@ func NewGoalID(value string) (GoalID, error) {
 	if trimmed == "" {
 		return "", ErrEmptyGoalID
 	}
-	
+
 	return GoalID(trimmed), nil
 }
 

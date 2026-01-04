@@ -215,11 +215,11 @@ func TestGoalTracker_CalculateProgress(t *testing.T) {
 	currentWeight, _ := weight.NewWeight("w1", userID, must(weight.NewWeightValue(68.0)), unit, time.Now(), "")
 
 	tests := []struct {
-		name                    string
-		setupMocks              func()
-		expectedErr             bool
-		expectedWeightToLose    float64
-		expectedIsOnTrack       bool
+		name                 string
+		setupMocks           func()
+		expectedErr          bool
+		expectedWeightToLose float64
+		expectedIsOnTrack    bool
 	}{
 		{
 			name: "successful progress calculation - losing weight",
