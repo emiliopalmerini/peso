@@ -99,12 +99,12 @@ body {
 }
 
 .page {
-  padding-block: var(--space-5);
-  padding-bottom: calc(var(--space-6) + var(--safe-bottom));
+  padding-block: var(--space-3);
+  padding-bottom: calc(var(--space-5) + var(--safe-bottom));
 }
 
 .page__section {
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
 }
 
 .page__section:first-of-type {
@@ -127,11 +127,11 @@ body {
   }
 
   .page {
-    padding-block: var(--space-6);
+    padding-block: var(--space-4);
   }
 
   .page__section {
-    margin-top: var(--space-5);
+    margin-top: var(--space-4);
   }
 
   .page__title {
@@ -658,13 +658,9 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 }
 
 /* ==============================================================
-   List Component (Mobile-Optimized)
+   List Component (Mobile-Optimized) - Cardless Design
 ============================================================== */
 .list {
-  background: var(--surface);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
   overflow: hidden;
 }
 
@@ -674,35 +670,43 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-4);
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--line);
   transition: background-color 0.15s ease;
-  min-height: 52px;
+  min-height: 44px;
 }
 
 .list .row:last-child { border-bottom: none; }
 
 .list .row:active {
   background: var(--bg-light);
+  margin-inline: calc(var(--space-3) * -1);
+  padding-inline: var(--space-3);
 }
 
 @media (hover: hover) {
-  .list .row:hover { background: var(--bg-light); }
+  .list .row:hover {
+    background: var(--bg-light);
+    margin-inline: calc(var(--space-3) * -1);
+    padding-inline: var(--space-3);
+  }
 }
 
 .list .row .name {
   font-weight: 500;
   color: var(--text);
+  font-size: 0.9375rem;
 }
 
 .list .row .value {
-  font-weight: 600;
-  color: var(--accent);
+  font-weight: 700;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
 }
 
 .list .row .date {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -773,54 +777,54 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 }
 
 /* ==============================================================
-   Details/Summary (Accordion)
+   Details/Summary (Accordion) - Cardless Design
 ============================================================== */
 details {
-  background: var(--surface);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
   overflow: hidden;
+  border-top: 1px solid var(--line);
 }
 
 details summary {
-  padding: var(--space-4);
+  padding: var(--space-3) 0;
   font-weight: 600;
-  color: var(--text);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
   cursor: pointer;
   user-select: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: background-color 0.15s ease;
-  min-height: 52px;
+  transition: color 0.15s ease;
+  min-height: 44px;
   list-style: none;
 }
 
 details summary::-webkit-details-marker { display: none; }
 
-details summary:active { background: var(--bg-light); }
+details summary:active { color: var(--text); }
 
 @media (hover: hover) {
-  details summary:hover { background: var(--bg-light); }
+  details summary:hover { color: var(--text); }
 }
 
 details summary::after {
   content: "";
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
   transform: rotate(-45deg);
   transition: transform 0.2s ease;
   flex-shrink: 0;
 }
 
 details[open] summary::after { transform: rotate(45deg); }
-details[open] summary { border-bottom: 1px solid var(--line); }
+details[open] summary { border-bottom: none; }
 
 details .details-content {
-  padding: var(--space-4);
+  padding: 0 0 var(--space-3);
 }
 
 /* ==============================================================
@@ -1476,25 +1480,25 @@ details .details-content {
 }
 
 /* ==============================================================
-   Section Headers (for list headers)
+   Section Headers (for list headers) - Compact Style
 ============================================================== */
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) 0;
+  padding: var(--space-2) 0;
 }
 
 .section-header__title {
-  font-size: 0.875rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .section-header__action {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--accent-600);
   text-decoration: none;
