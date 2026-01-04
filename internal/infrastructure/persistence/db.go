@@ -49,13 +49,13 @@ func (db *DB) Migrate(migrationsFS fs.FS) error {
 
 	for _, file := range files {
 		migrationName := strings.TrimSuffix(filepath.Base(file), ".sql")
-		
+
 		// Check if migration has already been applied
 		applied, err := db.isMigrationApplied(migrationName)
 		if err != nil {
 			return fmt.Errorf("failed to check migration status: %w", err)
 		}
-		
+
 		if applied {
 			continue
 		}
@@ -113,7 +113,7 @@ func (db *DB) executeMigration(content string) error {
 	// Clean up the content - remove comments and excessive whitespace
 	lines := strings.Split(content, "\n")
 	var cleanedLines []string
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "--") {
@@ -121,13 +121,13 @@ func (db *DB) executeMigration(content string) error {
 		}
 		cleanedLines = append(cleanedLines, line)
 	}
-	
+
 	if len(cleanedLines) == 0 {
 		return nil // No actual SQL to execute
 	}
-	
+
 	cleanedContent := strings.Join(cleanedLines, " ")
-	
+
 	if _, err := tx.Exec(cleanedContent); err != nil {
 		return fmt.Errorf("failed to execute migration: %w", err)
 	}

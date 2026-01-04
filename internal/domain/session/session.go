@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	tokenLength    = 32
-	defaultExpiry  = 30 * 24 * time.Hour // 30 days
+	tokenLength   = 32
+	defaultExpiry = 30 * 24 * time.Hour // 30 days
 )
 
 var (

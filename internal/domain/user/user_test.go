@@ -7,11 +7,11 @@ import (
 
 func TestUser_NewUser(t *testing.T) {
 	tests := []struct {
-		name    string
-		id      string
+		name     string
+		id       string
 		userName string
-		email   string
-		wantErr bool
+		email    string
+		wantErr  bool
 	}{
 		{
 			name:     "valid user",

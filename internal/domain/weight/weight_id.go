@@ -16,7 +16,7 @@ func NewWeightID(value string) (WeightID, error) {
 	if trimmed == "" {
 		return "", ErrEmptyWeightID
 	}
-	
+
 	return WeightID(trimmed), nil
 }
 

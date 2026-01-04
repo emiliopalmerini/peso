@@ -22,15 +22,15 @@ func NewWeightValue(value float64) (WeightValue, error) {
 	if value <= 0 {
 		return 0, ErrWeightInvalid
 	}
-	
+
 	if value < MinWeightValue {
 		return 0, ErrWeightTooLow
 	}
-	
+
 	if value > MaxWeightValue {
 		return 0, ErrWeightTooHigh
 	}
-	
+
 	return WeightValue(value), nil
 }
 

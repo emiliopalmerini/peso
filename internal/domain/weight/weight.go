@@ -18,9 +18,9 @@ type Weight struct {
 }
 
 var (
-	ErrEmptyUserID      = errors.New("user ID cannot be empty")
+	ErrEmptyUserID       = errors.New("user ID cannot be empty")
 	ErrFutureMeasurement = errors.New("measurement date cannot be in the future")
-	ErrZeroWeight       = errors.New("weight value cannot be zero")
+	ErrZeroWeight        = errors.New("weight value cannot be zero")
 )
 
 func NewWeight(id string, userID user.UserID, value WeightValue, unit WeightUnit, measuredAt time.Time, notes string) (*Weight, error) {
@@ -28,22 +28,22 @@ func NewWeight(id string, userID user.UserID, value WeightValue, unit WeightUnit
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if userID.IsEmpty() {
 		return nil, ErrEmptyUserID
 	}
-	
+
 	if value.IsZero() {
 		return nil, ErrZeroWeight
 	}
-	
+
 	// Check if measurement is in the future (allow same day)
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
 	if measuredAt.After(today) {
 		return nil, ErrFutureMeasurement
 	}
-	
+
 	return &Weight{
 		id:         weightID,
 		userID:     userID,

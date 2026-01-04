@@ -31,21 +31,21 @@ func NewGoal(id string, userID user.UserID, targetWeight weight.WeightValue, uni
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if userID.IsEmpty() {
 		return nil, ErrEmptyUserID
 	}
-	
+
 	if targetWeight.IsZero() {
 		return nil, ErrZeroTargetWeight
 	}
-	
+
 	if targetDate.IsZero() {
 		return nil, ErrZeroTargetDate
 	}
-	
+
 	now := time.Now()
-	
+
 	return &Goal{
 		id:           goalID,
 		userID:       userID,
