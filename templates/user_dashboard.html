@@ -2,9 +2,16 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Dashboard - Peso</title>
+    <meta name="description" content="Track your weight and reach your goals">
+    <meta name="theme-color" content="#111111">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Peso">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/static/icon-192.svg">
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/min.css">
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -495,6 +502,12 @@
         // ============================================================
         document.addEventListener('DOMContentLoaded', renderChart);
         document.body.addEventListener('weight-updated', renderChart);
+
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/service-worker.js')
+                .catch((err) => console.log('SW registration failed:', err));
+        }
     </script>
 </body>
 </html>
