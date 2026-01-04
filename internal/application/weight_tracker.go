@@ -223,6 +223,30 @@ func (wt *WeightTracker) getPeriodBounds(period TimePeriod) (from, to time.Time)
 	return from, to
 }
 
+// DeleteWeight removes a weight record
+func (wt *WeightTracker) DeleteWeight(userID user.UserID, weightID weight.WeightID) error {
+	// Verify user exists
+	if _, err := wt.userRepo.FindByID(userID); err != nil {
+		return fmt.Errorf("%w: %s", ErrUserNotFound, err.Error())
+	}
+
+	// Get weight to verify it belongs to the user
+	w, err := wt.weightRepo.FindByID(weightID)
+	if err != nil {
+		return fmt.Errorf("weight not found: %w", err)
+	}
+
+	if w.UserID() != userID {
+		return fmt.Errorf("weight does not belong to user")
+	}
+
+	if err := wt.weightRepo.Delete(weightID); err != nil {
+		return fmt.Errorf("failed to delete weight: %w", err)
+	}
+
+	return nil
+}
+
 // abs returns the absolute value of a float64
 func abs(x float64) float64 {
 	if x < 0 {

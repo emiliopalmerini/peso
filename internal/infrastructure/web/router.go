@@ -70,6 +70,7 @@ func NewRouter(
 	mux.HandleFunc("GET /users/{userID}/stat-pills", handlers.StatPillsHandler)
 
 	mux.HandleFunc("POST /api/weights", handlers.AddWeightHandler)
+	mux.HandleFunc("DELETE /api/weights/{userID}/{weightID}", handlers.DeleteWeightHandler)
 	mux.HandleFunc("GET /api/weights/{userID}", handlers.WeightHistoryHandler)
 	mux.HandleFunc("GET /api/weights/latest/{userID}", handlers.WeightLatestHandler)
 	mux.HandleFunc("POST /api/goals", handlers.AddGoalHandler)

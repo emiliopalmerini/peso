@@ -428,18 +428,22 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Build view models
 	type Row struct {
-		Date  string
-		Value string
-		Unit  string
-		Notes string
+		ID     string
+		UserID string
+		Date   string
+		Value  string
+		Unit   string
+		Notes  string
 	}
 	var rows []Row
 	for _, wgt := range weights {
 		rows = append(rows, Row{
-			Date:  wgt.MeasuredAt().Format("02/01/2006"),
-			Value: fmt.Sprintf("%.1f", wgt.Value().Float64()),
-			Unit:  wgt.Unit().String(),
-			Notes: wgt.Notes(),
+			ID:     wgt.ID().String(),
+			UserID: userIDStr,
+			Date:   wgt.MeasuredAt().Format("02/01/2006"),
+			Value:  fmt.Sprintf("%.1f", wgt.Value().Float64()),
+			Unit:   wgt.Unit().String(),
+			Notes:  wgt.Notes(),
 		})
 	}
 
@@ -451,6 +455,32 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 		writeError(h.logger, w, r, http.StatusInternalServerError, "Template error", err)
 		return
 	}
+}
+
+// DeleteWeightHandler handles weight deletion
+func (h *Handlers) DeleteWeightHandler(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.PathValue("userID")
+	weightIDStr := r.PathValue("weightID")
+
+	userID, err := user.NewUserID(userIDStr)
+	if err != nil {
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid user ID", err)
+		return
+	}
+
+	weightID, err := weight.NewWeightID(weightIDStr)
+	if err != nil {
+		writeError(h.logger, w, r, http.StatusBadRequest, "Invalid weight ID", err)
+		return
+	}
+
+	if err := h.weightTracker.DeleteWeight(userID, weightID); err != nil {
+		writeError(h.logger, w, r, http.StatusInternalServerError, "Failed to delete weight", err)
+		return
+	}
+
+	w.Header().Set("HX-Trigger", "weight-updated")
+	w.WriteHeader(http.StatusOK)
 }
 
 // WeightFormHandler serves the weight entry form
