@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{{.Title}}</title>
     <meta name="description" content="Track your weight and reach your goals">
-    <meta name="theme-color" content="#111111">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Peso">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/static/icon-192.svg">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/min.css">
 </head>
-<body class="theme-ink density-comfortable style-minimal">
+<body>
     <header class="topbar">
         <div class="container topbar__inner">
             <a class="brand" href="/">Peso</a>
@@ -22,22 +22,22 @@
     </header>
 
     <main class="container page">
-        <h1 class="page__title">Accedi</h1>
+        <section class="page__section page__section--narrow" style="margin-top: var(--space-8);">
+            <h1 class="auth-title">Accedi</h1>
 
-        <section class="page__section">
             {{if .Error}}
             <div class="error">{{.Error}}</div>
             {{end}}
 
-            <form method="POST" action="/login" class="form">
+            <form method="POST" action="/login" class="auth-form">
                 <div class="field">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required autofocus autocomplete="email">
+                    <input type="email" id="email" name="email" required autofocus autocomplete="email" placeholder="nome@esempio.it">
                 </div>
 
                 <div class="field">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="La tua password">
                 </div>
 
                 <div class="actions">
@@ -45,10 +45,38 @@
                 </div>
             </form>
 
-            <p class="text-muted text-center auth-footer">
+            <p class="auth-footer text-center">
                 Non hai un account? <a href="/register">Registrati</a>
             </p>
         </section>
     </main>
+
+    <style>
+        .auth-title {
+            font-size: var(--text-3xl);
+            font-weight: var(--weight-bold);
+            letter-spacing: -0.03em;
+            margin-bottom: var(--space-6);
+            text-align: center;
+        }
+
+        .auth-form {
+            margin-top: var(--space-5);
+        }
+
+        .auth-form .field {
+            margin-bottom: var(--space-4);
+        }
+
+        .auth-form .actions {
+            margin-top: var(--space-5);
+        }
+
+        @media (min-width: 640px) {
+            .auth-title {
+                font-size: var(--text-4xl);
+            }
+        }
+    </style>
 </body>
 </html>

@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Dashboard - Peso</title>
     <meta name="description" content="Track your weight and reach your goals">
-    <meta name="theme-color" content="#111111">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Peso">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/static/icon-192.svg">
@@ -16,7 +16,7 @@
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="theme-ink density-comfortable style-minimal">
+<body>
     <header class="topbar">
         <div class="container topbar__inner">
             <a class="brand" href="/">Peso</a>
@@ -28,28 +28,28 @@
     </header>
 
     <main class="container page">
-        <!-- Hero Stat Card -->
+        <!-- Hero Stat -->
         <section class="page__section">
             <div class="stat-hero" id="stat-hero"
                  hx-get="/users/{{.UserID}}/stat-hero"
                  hx-trigger="load, weight-updated from:body"
                  hx-swap="innerHTML">
-                <div class="skeleton" style="height: 60px; width: 150px; margin: 0 auto;"></div>
+                <div class="skeleton" style="height: 80px; width: 200px; margin: 0 auto;"></div>
             </div>
         </section>
 
         <!-- Stat Pills -->
-        <section class="page__section">
+        <section class="page__section" style="margin-top: var(--space-4);">
             <div class="stat-pills" id="stat-pills"
                  hx-get="/users/{{.UserID}}/stat-pills"
                  hx-trigger="load, weight-updated from:body, goal-updated from:body"
                  hx-swap="innerHTML">
-                <div class="stat-pill"><div class="skeleton" style="height: 50px;"></div></div>
-                <div class="stat-pill"><div class="skeleton" style="height: 50px;"></div></div>
+                <div class="stat-pill"><div class="skeleton" style="height: 48px; width: 80px;"></div></div>
+                <div class="stat-pill"><div class="skeleton" style="height: 48px; width: 80px;"></div></div>
             </div>
         </section>
 
-        <!-- Goal panel (for goal form) -->
+        <!-- Goal panel -->
         <section class="page__section"><div id="panel"></div></section>
 
         <!-- Weight Chart -->
@@ -89,7 +89,7 @@
             </div>
         </section>
 
-        <!-- Goal Summary (collapsible) -->
+        <!-- Goal Summary -->
         <section class="page__section">
             <details>
                 <summary>Obiettivo</summary>
@@ -194,7 +194,6 @@
             backdrop.classList.add('bottom-sheet-backdrop--open');
             sheet.classList.add('bottom-sheet--open');
             document.body.style.overflow = 'hidden';
-            // Pre-fill with last weight if available
             if (lastWeight) {
                 weightInput = lastWeight.toString();
                 updateWeightDisplay();
@@ -227,7 +226,6 @@
                         weightInput += '.';
                     }
                 } else {
-                    // Limit to format XXX.X
                     const parts = weightInput.split('.');
                     if (parts.length === 2 && parts[1].length >= 1) return;
                     if (parts.length === 1 && parts[0].length >= 3 && !weightInput.includes('.')) return;
@@ -321,7 +319,6 @@
         document.addEventListener('touchend', () => {
             if (pullIndicator.classList.contains('pull-indicator--visible')) {
                 pullIndicator.classList.add('pull-indicator--refreshing');
-                // Trigger refresh
                 document.body.dispatchEvent(new CustomEvent('weight-updated'));
                 renderChart();
                 setTimeout(() => {
@@ -382,7 +379,6 @@
                 const yMin = Math.max(0, minWeight - padding);
                 const yMax = maxWeight + padding;
 
-                // Simplified view for long periods
                 const isLongPeriod = ['6months', 'year', 'all'].includes(currentPeriod);
 
                 const config = {
@@ -396,17 +392,18 @@
                                 data: isLongPeriod ? [] : rawPoints,
                                 parsing: { xAxisKey: 'x', yAxisKey: 'y' },
                                 showLine: false,
-                                pointRadius: 2.5,
-                                pointHoverRadius: 4,
+                                pointRadius: 3,
+                                pointHoverRadius: 5,
                                 pointBorderWidth: 0,
-                                pointBackgroundColor: 'rgba(0, 0, 0, 0.2)'
+                                pointBackgroundColor: 'rgba(0, 0, 0, 0.15)'
                             },
                             {
                                 type: 'line',
                                 label: 'Media',
                                 data: avgValues,
                                 borderColor: 'rgb(17, 17, 17)',
-                                backgroundColor: 'rgba(17, 17, 17, 0.05)',
+                                backgroundColor: 'rgba(17, 17, 17, 0.03)',
+                                borderWidth: 2,
                                 tension: isLongPeriod ? 0.4 : 0.3,
                                 pointRadius: 0,
                                 pointHoverRadius: 0,
@@ -417,10 +414,10 @@
                                 label: 'Obiettivo',
                                 data: (goal && labels.length > 0) ? [{ x: labels[0], y: parseFloat(goal.targetWeight) }, { x: labels[labels.length - 1], y: parseFloat(goal.targetWeight) }] : [],
                                 parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                                borderColor: 'rgb(156, 163, 175)',
+                                borderColor: 'rgb(200, 200, 200)',
                                 backgroundColor: 'transparent',
-                                borderWidth: 2,
-                                borderDash: [5, 5],
+                                borderWidth: 1,
+                                borderDash: [4, 4],
                                 pointRadius: 0,
                                 showLine: true
                             }
@@ -434,10 +431,11 @@
                             legend: { display: false },
                             tooltip: {
                                 backgroundColor: 'rgb(17, 17, 17)',
-                                titleFont: { size: 12 },
-                                bodyFont: { size: 14, weight: 'bold' },
-                                padding: 10,
-                                cornerRadius: 8,
+                                titleFont: { size: 11, weight: '500' },
+                                bodyFont: { size: 13, weight: '600' },
+                                padding: 12,
+                                cornerRadius: 4,
+                                displayColors: false,
                                 callbacks: {
                                     title: (items) => items[0]?.label || '',
                                     label: (ctx) => {
@@ -453,14 +451,25 @@
                         scales: {
                             y: {
                                 beginAtZero: false,
-                                grid: { color: 'rgba(0,0,0,0.05)' },
+                                grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+                                border: { display: false },
                                 min: yMin,
                                 max: yMax,
-                                ticks: { font: { size: 11 } }
+                                ticks: {
+                                    font: { size: 11, weight: '500' },
+                                    color: '#999',
+                                    padding: 8
+                                }
                             },
                             x: {
                                 grid: { display: false },
-                                ticks: { font: { size: 11 }, maxTicksLimit: 6 }
+                                border: { display: false },
+                                ticks: {
+                                    font: { size: 11, weight: '500' },
+                                    color: '#999',
+                                    maxTicksLimit: 6,
+                                    padding: 8
+                                }
                             }
                         }
                     }
@@ -504,7 +513,6 @@
         document.addEventListener('DOMContentLoaded', renderChart);
         document.body.addEventListener('weight-updated', renderChart);
 
-        // Register service worker for PWA
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/service-worker.js')
                 .catch((err) => console.log('SW registration failed:', err));

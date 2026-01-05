@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{{.Title}}</title>
     <meta name="description" content="Track your weight and reach your goals">
-    <meta name="theme-color" content="#111111">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Peso">
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/static/icon-192.svg">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="stylesheet" href="/static/min.css">
 </head>
-<body class="theme-ink density-comfortable style-minimal">
+<body>
     <header class="topbar">
         <div class="container topbar__inner">
             <span class="brand">Peso</span>
@@ -22,10 +22,9 @@
     </header>
 
     <main class="container page page--centered">
-        <h1 class="page__title text-center">Peso</h1>
-
-        <section class="page__section page__section--narrow text-center">
-            <p class="text-muted">
+        <section class="page__section page__section--narrow">
+            <h1 class="landing-title">Peso</h1>
+            <p class="landing-subtitle">
                 Tieni traccia del tuo peso in modo semplice e efficace.
             </p>
 
@@ -35,5 +34,34 @@
             </div>
         </section>
     </main>
+
+    <style>
+        .landing-title {
+            font-size: var(--text-4xl);
+            font-weight: var(--weight-extrabold);
+            letter-spacing: -0.04em;
+            margin-bottom: var(--space-3);
+            line-height: 1;
+        }
+
+        .landing-subtitle {
+            font-size: var(--text-lg);
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            max-width: 280px;
+            margin: 0 auto var(--space-8);
+        }
+
+        @media (min-width: 640px) {
+            .landing-title {
+                font-size: 5rem;
+            }
+
+            .landing-subtitle {
+                font-size: var(--text-xl);
+                max-width: 320px;
+            }
+        }
+    </style>
 </body>
 </html>
