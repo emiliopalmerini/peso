@@ -7,6 +7,8 @@ pkgs.buildGoModule {
 
   vendorHash = "sha256-ULXOSrXsPkFTHRD3y3xozJs873Ppeqk29rst/92anic=";
 
+  subPackages = [ "cmd" ];
+
   # Enable CGO for SQLite support
   env.CGO_ENABLED = "1";
 
@@ -16,8 +18,9 @@ pkgs.buildGoModule {
     pkg-config
   ];
 
-  # Copy migrations and static assets to output
+  # Rename binary and copy assets
   postInstall = ''
+    mv $out/bin/cmd $out/bin/peso
     mkdir -p $out/share/peso
     cp -r ${../.}/migrations $out/share/peso/
     cp -r ${../.}/templates $out/share/peso/ || true
