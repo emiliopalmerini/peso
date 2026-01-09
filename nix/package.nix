@@ -5,7 +5,7 @@ pkgs.buildGoModule {
   version = "0.1.0";
   src = pkgs.lib.cleanSource ../.;
 
-  vendorHash = "sha256-aLRlPX8k5E4GhwB6Jx2t9K3mN7vL6Q0R4S1T5U8V9W0=";
+  vendorHash = "sha256-ULXOSrXsPkFTHRD3y3xozJs873Ppeqk29rst/92anic=";
 
   # Enable CGO for SQLite support
   env.CGO_ENABLED = "1";
