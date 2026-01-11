@@ -1,6 +1,16 @@
 {{if .HasData}}
-  <div class="stat-hero__weight">{{.CurrentWeight}}</div>
-  <div class="stat-hero__unit">{{.Unit}}</div>
+  <div class="stat-hero__row">
+    <button class="stat-hero__btn" data-action="decrement" aria-label="Diminuisci peso">
+      <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+    <div class="stat-hero__value">
+      <span class="stat-hero__weight" id="heroWeight">{{.CurrentWeight}}</span>
+      <span class="stat-hero__unit">{{.Unit}}</span>
+    </div>
+    <button class="stat-hero__btn" data-action="increment" aria-label="Aumenta peso">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+  </div>
   <div class="stat-hero__meta">
     <span class="stat-hero__date">{{.LastDate}} &middot; {{.LastTime}}</span>
     {{if .TrendValue}}
@@ -8,11 +18,19 @@
     {{end}}
   </div>
 {{else}}
-  <div class="stat-hero__empty">
-    <span class="stat-hero__weight">--</span>
-    <div class="stat-hero__unit">kg</div>
-    <div class="stat-hero__meta">
-      <span class="caption">Nessun peso registrato</span>
+  <div class="stat-hero__row">
+    <button class="stat-hero__btn" data-action="decrement" aria-label="Diminuisci peso">
+      <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+    <div class="stat-hero__value">
+      <span class="stat-hero__weight" id="heroWeight">70.0</span>
+      <span class="stat-hero__unit">kg</span>
     </div>
+    <button class="stat-hero__btn" data-action="increment" aria-label="Aumenta peso">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+  </div>
+  <div class="stat-hero__meta">
+    <span class="caption">Usa + o - per registrare</span>
   </div>
 {{end}}

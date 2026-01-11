@@ -626,7 +626,7 @@ func (h *Handlers) StatHeroHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// StatPillsHandler returns the stat pills with goal and average
+// StatPillsHandler returns the stat pills with goal info
 func (h *Handlers) StatPillsHandler(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.PathValue("userID")
 	userID, err := user.NewUserID(userIDStr)
@@ -636,12 +636,9 @@ func (h *Handlers) StatPillsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type vm struct {
-		GoalWeight  string
-		GoalUnit    string
-		HasGoal     bool
-		WeekAvg     string
-		WeekAvgUnit string
-		HasWeekAvg  bool
+		GoalWeight string
+		GoalUnit   string
+		HasGoal    bool
 	}
 
 	out := vm{}
@@ -651,19 +648,6 @@ func (h *Handlers) StatPillsHandler(w http.ResponseWriter, r *http.Request) {
 		out.HasGoal = true
 		out.GoalWeight = fmt.Sprintf("%.1f", g.TargetWeight().Float64())
 		out.GoalUnit = g.Unit().String()
-	}
-
-	// Calculate 7-day average
-	weights, _ := h.weightTracker.GetWeightHistory(userID, application.TimePeriodLastWeek)
-	if len(weights) > 0 {
-		var sum float64
-		for _, wgt := range weights {
-			sum += wgt.Value().Float64()
-		}
-		avg := sum / float64(len(weights))
-		out.HasWeekAvg = true
-		out.WeekAvg = fmt.Sprintf("%.1f", avg)
-		out.WeekAvgUnit = weights[0].Unit().String()
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "partials_stat_pills.html", out); err != nil {

@@ -45,7 +45,6 @@
                  hx-trigger="load, weight-updated from:body, goal-updated from:body"
                  hx-swap="innerHTML">
                 <div class="stat-pill"><div class="skeleton" style="height: 48px; width: 80px;"></div></div>
-                <div class="stat-pill"><div class="skeleton" style="height: 48px; width: 80px;"></div></div>
             </div>
         </section>
 
@@ -102,47 +101,6 @@
         </section>
     </main>
 
-    <!-- FAB -->
-    <button class="fab" id="fab" aria-label="Aggiungi peso">
-        <svg class="fab__icon" viewBox="0 0 24 24">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-    </button>
-
-    <!-- Bottom Sheet -->
-    <div class="bottom-sheet-backdrop" id="sheetBackdrop"></div>
-    <div class="bottom-sheet" id="bottomSheet">
-        <div class="bottom-sheet__handle"></div>
-        <div class="bottom-sheet__header">
-            <h2 class="bottom-sheet__title">Registra peso</h2>
-        </div>
-        <div class="bottom-sheet__content">
-            <div class="weight-input-display">
-                <span class="weight-input-display__value" id="weightDisplay">--.-</span>
-                <span class="weight-input-display__unit">kg</span>
-                <div class="weight-input-display__date" id="dateDisplay">Oggi</div>
-            </div>
-            <div class="numpad">
-                <button class="numpad__key" data-key="1">1</button>
-                <button class="numpad__key" data-key="2">2</button>
-                <button class="numpad__key" data-key="3">3</button>
-                <button class="numpad__key" data-key="4">4</button>
-                <button class="numpad__key" data-key="5">5</button>
-                <button class="numpad__key" data-key="6">6</button>
-                <button class="numpad__key" data-key="7">7</button>
-                <button class="numpad__key" data-key="8">8</button>
-                <button class="numpad__key" data-key="9">9</button>
-                <button class="numpad__key" data-key=".">.</button>
-                <button class="numpad__key" data-key="0">0</button>
-                <button class="numpad__key" data-key="backspace">
-                    <svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
-                </button>
-            </div>
-            <button class="btn btn-primary btn--block" id="saveWeight">Salva</button>
-        </div>
-    </div>
-
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -160,8 +118,9 @@
         // ============================================================
         let chart;
         let currentPeriod = '3months';
-        let weightInput = '';
-        let lastWeight = null;
+        let currentWeight = null;
+        let saveTimeout = null;
+        let isSaving = false;
         const userId = '{{.UserID}}';
         const ctx = document.getElementById('weightChart').getContext('2d');
         const goal = {{ if .ActiveGoal }}{{ if and .CreatedAt .StartWeight }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}", createdAt: "{{.CreatedAt}}", startWeight: {{.StartWeight}} }{{ else }} { targetWeight: {{.ActiveGoal.TargetWeight}}, targetDate: "{{.ActiveGoal.TargetDate}}", unit: "{{.ActiveGoal.Unit}}" }{{ end }}{{ else }} null {{ end }};
@@ -182,105 +141,197 @@
         }
 
         // ============================================================
-        // Bottom Sheet
+        // Weight Adjustment (Plus/Minus)
         // ============================================================
-        const fab = document.getElementById('fab');
-        const backdrop = document.getElementById('sheetBackdrop');
-        const sheet = document.getElementById('bottomSheet');
-        const weightDisplay = document.getElementById('weightDisplay');
-        const saveBtn = document.getElementById('saveWeight');
+        async function saveWeight(weight) {
+            if (isSaving) return;
+            isSaving = true;
+            const hero = document.getElementById('stat-hero');
+            hero.classList.add('stat-hero--saving');
 
-        function openSheet() {
-            backdrop.classList.add('bottom-sheet-backdrop--open');
-            sheet.classList.add('bottom-sheet--open');
-            document.body.style.overflow = 'hidden';
-            if (lastWeight) {
-                weightInput = lastWeight.toString();
-                updateWeightDisplay();
-            }
-        }
-
-        function closeSheet() {
-            backdrop.classList.remove('bottom-sheet-backdrop--open');
-            sheet.classList.remove('bottom-sheet--open');
-            document.body.style.overflow = '';
-            weightInput = '';
-            updateWeightDisplay();
-        }
-
-        function updateWeightDisplay() {
-            weightDisplay.textContent = weightInput || '--.-';
-        }
-
-        fab.addEventListener('click', openSheet);
-        backdrop.addEventListener('click', closeSheet);
-
-        // Numpad handling
-        document.querySelectorAll('.numpad__key').forEach(key => {
-            key.addEventListener('click', () => {
-                const value = key.dataset.key;
-                if (value === 'backspace') {
-                    weightInput = weightInput.slice(0, -1);
-                } else if (value === '.') {
-                    if (!weightInput.includes('.') && weightInput.length > 0) {
-                        weightInput += '.';
-                    }
-                } else {
-                    const parts = weightInput.split('.');
-                    if (parts.length === 2 && parts[1].length >= 1) return;
-                    if (parts.length === 1 && parts[0].length >= 3 && !weightInput.includes('.')) return;
-                    weightInput += value;
-                }
-                updateWeightDisplay();
-            });
-        });
-
-        // Save weight
-        saveBtn.addEventListener('click', async () => {
-            const weight = parseFloat(weightInput);
-            if (isNaN(weight) || weight < 10 || weight > 500) {
-                showToast('Inserisci un peso valido (10-500 kg)', 'error');
-                return;
-            }
             try {
                 const formData = new FormData();
                 formData.append('user_id', userId);
-                formData.append('weight', weight);
+                formData.append('weight', weight.toFixed(1));
                 const response = await fetch('/api/weights', {
                     method: 'POST',
                     body: formData
                 });
                 if (response.ok) {
-                    closeSheet();
-                    fab.classList.add('fab--success');
-                    setTimeout(() => fab.classList.remove('fab--success'), 600);
                     showToast('Peso salvato', 'success');
                     document.body.dispatchEvent(new CustomEvent('weight-updated'));
-                    lastWeight = weight;
                 } else {
                     showToast('Errore nel salvataggio', 'error');
                 }
             } catch (e) {
                 showToast('Errore di connessione', 'error');
+            } finally {
+                isSaving = false;
+                hero.classList.remove('stat-hero--saving');
+            }
+        }
+
+        function adjustWeight(delta) {
+            const weightEl = document.getElementById('heroWeight');
+            if (!weightEl) return;
+
+            if (currentWeight === null) {
+                currentWeight = parseFloat(weightEl.textContent) || 70.0;
+            }
+
+            currentWeight = Math.round((currentWeight + delta) * 10) / 10;
+            currentWeight = Math.max(10, Math.min(500, currentWeight));
+            weightEl.textContent = currentWeight.toFixed(1);
+
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => saveWeight(currentWeight), 1500);
+        }
+
+        // ============================================================
+        // Long Press Detection
+        // ============================================================
+        const LONG_PRESS_START_DELAY = 500;   // Delay before repeat starts
+        const REPEAT_INTERVAL = 150;          // Interval for repeated adjustments
+        const SWITCH_TO_MEDIUM_DELAY = 2000;  // Time before switching to 0.5 kg increments
+        const SWITCH_TO_LARGE_DELAY = 4000;   // Time before switching to 1.0 kg increments
+        const statHero = document.getElementById('stat-hero');
+        let pressTimer = null;
+        let repeatInterval = null;
+        let isLongPress = false;
+        let pressStartTime = 0;
+        let activeButton = null;
+        let lastTouchTime = 0;
+        let currentIncrementLevel = 'small'; // 'small' (0.1), 'medium' (0.5), 'large' (1.0)
+
+        function handlePressStart(btn) {
+            if (activeButton) return; // Prevent multiple simultaneous presses
+
+            activeButton = btn;
+            isLongPress = false;
+            currentIncrementLevel = 'small';
+            pressStartTime = Date.now();
+
+            // Start long press after initial delay
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                const action = btn.dataset.action;
+
+                // First adjustment with small increment
+                const delta = action === 'increment' ? 0.1 : -0.1;
+                adjustWeight(delta);
+
+                // Start repeating adjustments
+                repeatInterval = setInterval(() => {
+                    const elapsed = Date.now() - pressStartTime;
+                    let currentDelta;
+
+                    // Determine increment level based on elapsed time
+                    if (elapsed >= SWITCH_TO_LARGE_DELAY) {
+                        currentIncrementLevel = 'large';
+                        currentDelta = action === 'increment' ? 1.0 : -1.0;
+                    } else if (elapsed >= SWITCH_TO_MEDIUM_DELAY) {
+                        currentIncrementLevel = 'medium';
+                        currentDelta = action === 'increment' ? 0.5 : -0.5;
+                    } else {
+                        currentDelta = action === 'increment' ? 0.1 : -0.1;
+                    }
+
+                    adjustWeight(currentDelta);
+                }, REPEAT_INTERVAL);
+            }, LONG_PRESS_START_DELAY);
+        }
+
+        function handlePressEnd(btn) {
+            if (!activeButton || activeButton !== btn) return;
+
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+
+            if (repeatInterval) {
+                clearInterval(repeatInterval);
+                repeatInterval = null;
+            }
+
+            // Only trigger short press if it wasn't a long press and press was quick
+            if (!isLongPress && (Date.now() - pressStartTime) < LONG_PRESS_START_DELAY) {
+                const action = btn.dataset.action;
+                if (action === 'increment') adjustWeight(0.1);
+                else if (action === 'decrement') adjustWeight(-0.1);
+            }
+
+            isLongPress = false;
+            currentIncrementLevel = 'small';
+            activeButton = null;
+        }
+
+        function handlePressCancel() {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
+            if (repeatInterval) {
+                clearInterval(repeatInterval);
+                repeatInterval = null;
+            }
+            isLongPress = false;
+            currentIncrementLevel = 'small';
+            activeButton = null;
+        }
+
+        // Touch events for mobile
+        statHero.addEventListener('touchstart', (e) => {
+            const btn = e.target.closest('.stat-hero__btn');
+            if (!btn) return;
+            e.preventDefault();
+            lastTouchTime = Date.now();
+            handlePressStart(btn);
+        }, { passive: false });
+
+        statHero.addEventListener('touchmove', (e) => {
+            if (activeButton) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        statHero.addEventListener('touchend', (e) => {
+            if (!activeButton) return;
+            e.preventDefault();
+            handlePressEnd(activeButton);
+        }, { passive: false });
+
+        statHero.addEventListener('touchcancel', () => {
+            handlePressCancel();
+        });
+
+        // Mouse events for desktop (skip if recent touch to prevent dual-firing)
+        statHero.addEventListener('mousedown', (e) => {
+            if (Date.now() - lastTouchTime < 300) return;
+            const btn = e.target.closest('.stat-hero__btn');
+            if (!btn) return;
+            handlePressStart(btn);
+        });
+
+        statHero.addEventListener('mouseup', (e) => {
+            if (!activeButton) return;
+            const btn = e.target.closest('.stat-hero__btn');
+            if (btn === activeButton) {
+                handlePressEnd(btn);
             }
         });
 
-        // ============================================================
-        // FAB scroll behavior
-        // ============================================================
-        let lastScrollY = 0;
-        let fabHidden = false;
-        window.addEventListener('scroll', () => {
-            const currentScrollY = window.scrollY;
-            if (currentScrollY > lastScrollY && currentScrollY > 100 && !fabHidden) {
-                fab.classList.add('fab--hidden');
-                fabHidden = true;
-            } else if (currentScrollY < lastScrollY && fabHidden) {
-                fab.classList.remove('fab--hidden');
-                fabHidden = false;
+        // Global mouseup to handle releases anywhere (including outside statHero)
+        document.addEventListener('mouseup', () => {
+            if (activeButton) {
+                handlePressEnd(activeButton);
             }
-            lastScrollY = currentScrollY;
-        }, { passive: true });
+        });
+
+        // Cancel when mouse leaves the stat-hero area entirely
+        statHero.addEventListener('mouseleave', () => {
+            if (activeButton) handlePressCancel();
+        });
 
         // ============================================================
         // Period Chips

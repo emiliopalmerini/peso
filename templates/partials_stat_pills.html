@@ -9,14 +9,3 @@
     <div class="stat-pill__value">--</div>
   </div>
 {{end}}
-{{if .HasWeekAvg}}
-  <div class="stat-pill">
-    <div class="stat-pill__label">Media 7gg</div>
-    <div class="stat-pill__value">{{.WeekAvg}} {{.WeekAvgUnit}}</div>
-  </div>
-{{else}}
-  <div class="stat-pill stat-pill--empty">
-    <div class="stat-pill__label">Media 7gg</div>
-    <div class="stat-pill__value">--</div>
-  </div>
-{{end}}

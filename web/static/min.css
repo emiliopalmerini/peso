@@ -312,6 +312,11 @@ a:hover { opacity: 0.7; }
 .stat-hero {
   padding: var(--space-8) 0 var(--space-6);
   text-align: center;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 
 .stat-hero__weight {
@@ -374,6 +379,58 @@ a:hover { opacity: 0.7; }
   color: var(--color-text-tertiary);
 }
 
+.stat-hero__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+}
+
+.stat-hero__value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.stat-hero__btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.stat-hero__btn:hover {
+  border-color: var(--color-text);
+  background: var(--ink-05);
+}
+
+.stat-hero__btn:active {
+  transform: scale(0.92);
+  background: var(--ink-10);
+}
+
+.stat-hero__btn svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.stat-hero--saving .stat-hero__weight {
+  opacity: 0.5;
+}
+
 @media (min-width: 640px) {
   .stat-hero {
     padding: var(--space-10) 0 var(--space-8);
@@ -385,6 +442,16 @@ a:hover { opacity: 0.7; }
 
   .stat-hero__unit {
     font-size: var(--text-2xl);
+  }
+
+  .stat-hero__btn {
+    width: 56px;
+    height: 56px;
+  }
+
+  .stat-hero__btn svg {
+    width: 24px;
+    height: 24px;
   }
 }
 
