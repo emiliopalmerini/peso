@@ -114,6 +114,39 @@
 
     <script>
         // ============================================================
+        // Color Scheme Detection
+        // ============================================================
+        const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+        function getChartColors() {
+            const isDark = darkModeQuery.matches;
+            return {
+                line: isDark ? 'rgb(242, 242, 242)' : 'rgb(17, 17, 17)',
+                lineFill: isDark ? 'rgba(242, 242, 242, 0.05)' : 'rgba(17, 17, 17, 0.03)',
+                scatter: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
+                goal: isDark ? 'rgb(102, 102, 102)' : 'rgb(200, 200, 200)',
+                tooltip: isDark ? 'rgb(242, 242, 242)' : 'rgb(17, 17, 17)',
+                tooltipText: isDark ? 'rgb(17, 17, 17)' : 'rgb(255, 255, 255)',
+                grid: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+                tick: isDark ? '#666666' : '#999999'
+            };
+        }
+
+        function updateThemeColor() {
+            const isDark = darkModeQuery.matches;
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) {
+                meta.content = isDark ? '#111111' : '#ffffff';
+            }
+        }
+
+        darkModeQuery.addEventListener('change', () => {
+            updateThemeColor();
+            if (chart) renderChart();
+        });
+        updateThemeColor();
+
+        // ============================================================
         // State
         // ============================================================
         let chart;
@@ -432,6 +465,7 @@
 
                 const isLongPeriod = ['6months', 'year', 'all'].includes(currentPeriod);
 
+                const colors = getChartColors();
                 const config = {
                     type: 'line',
                     data: {
@@ -446,14 +480,14 @@
                                 pointRadius: 3,
                                 pointHoverRadius: 5,
                                 pointBorderWidth: 0,
-                                pointBackgroundColor: 'rgba(0, 0, 0, 0.15)'
+                                pointBackgroundColor: colors.scatter
                             },
                             {
                                 type: 'line',
                                 label: 'Media',
                                 data: avgValues,
-                                borderColor: 'rgb(17, 17, 17)',
-                                backgroundColor: 'rgba(17, 17, 17, 0.03)',
+                                borderColor: colors.line,
+                                backgroundColor: colors.lineFill,
                                 borderWidth: 2,
                                 tension: isLongPeriod ? 0.4 : 0.3,
                                 pointRadius: 0,
@@ -465,7 +499,7 @@
                                 label: 'Obiettivo',
                                 data: (goal && labels.length > 0) ? [{ x: labels[0], y: parseFloat(goal.targetWeight) }, { x: labels[labels.length - 1], y: parseFloat(goal.targetWeight) }] : [],
                                 parsing: { xAxisKey: 'x', yAxisKey: 'y' },
-                                borderColor: 'rgb(200, 200, 200)',
+                                borderColor: colors.goal,
                                 backgroundColor: 'transparent',
                                 borderWidth: 1,
                                 borderDash: [4, 4],
@@ -481,7 +515,9 @@
                         plugins: {
                             legend: { display: false },
                             tooltip: {
-                                backgroundColor: 'rgb(17, 17, 17)',
+                                backgroundColor: colors.tooltip,
+                                titleColor: colors.tooltipText,
+                                bodyColor: colors.tooltipText,
                                 titleFont: { size: 11, weight: '500' },
                                 bodyFont: { size: 13, weight: '600' },
                                 padding: 12,
@@ -502,13 +538,13 @@
                         scales: {
                             y: {
                                 beginAtZero: false,
-                                grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+                                grid: { color: colors.grid, drawBorder: false },
                                 border: { display: false },
                                 min: yMin,
                                 max: yMax,
                                 ticks: {
                                     font: { size: 11, weight: '500' },
-                                    color: '#999',
+                                    color: colors.tick,
                                     padding: 8
                                 }
                             },
@@ -517,7 +553,7 @@
                                 border: { display: false },
                                 ticks: {
                                     font: { size: 11, weight: '500' },
-                                    color: '#999',
+                                    color: colors.tick,
                                     maxTicksLimit: 6,
                                     padding: 8
                                 }
@@ -529,10 +565,20 @@
                 if (chart) {
                     chart.data.labels = labels;
                     chart.data.datasets[0].data = isLongPeriod ? [] : rawPoints;
+                    chart.data.datasets[0].pointBackgroundColor = colors.scatter;
                     chart.data.datasets[1].data = avgValues;
                     chart.data.datasets[1].tension = isLongPeriod ? 0.4 : 0.3;
+                    chart.data.datasets[1].borderColor = colors.line;
+                    chart.data.datasets[1].backgroundColor = colors.lineFill;
                     const goalLineData = (goal && labels.length > 0) ? [{ x: labels[0], y: parseFloat(goal.targetWeight) }, { x: labels[labels.length - 1], y: parseFloat(goal.targetWeight) }] : [];
                     chart.data.datasets[2].data = goalLineData;
+                    chart.data.datasets[2].borderColor = colors.goal;
+                    chart.options.plugins.tooltip.backgroundColor = colors.tooltip;
+                    chart.options.plugins.tooltip.titleColor = colors.tooltipText;
+                    chart.options.plugins.tooltip.bodyColor = colors.tooltipText;
+                    chart.options.scales.y.grid.color = colors.grid;
+                    chart.options.scales.y.ticks.color = colors.tick;
+                    chart.options.scales.x.ticks.color = colors.tick;
                     chart.options.scales.y.min = yMin;
                     chart.options.scales.y.max = yMax;
                     chart.update('none');

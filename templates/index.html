@@ -63,5 +63,14 @@
             }
         }
     </style>
+    <script>
+        (function() {
+            const q = window.matchMedia('(prefers-color-scheme: dark)');
+            const m = document.querySelector('meta[name="theme-color"]');
+            const update = () => m && (m.content = q.matches ? '#111111' : '#ffffff');
+            q.addEventListener('change', update);
+            update();
+        })();
+    </script>
 </body>
 </html>
