@@ -1,8 +1,19 @@
-{{if .HasGoal}}
+{{if .GoalReached}}
+  <div class="stat-pill stat-pill--success">
+    <div class="stat-pill__label">Obiettivo</div>
+    <div class="stat-pill__value">Raggiunto!</div>
+  </div>
+{{else if .HasGoal}}
   <div class="stat-pill">
     <div class="stat-pill__label">Obiettivo</div>
     <div class="stat-pill__value">{{.GoalWeight}} {{.GoalUnit}}</div>
   </div>
+  {{if .HasRemaining}}
+  <div class="stat-pill">
+    <div class="stat-pill__label">Mancano</div>
+    <div class="stat-pill__value">{{.Remaining}} kg</div>
+  </div>
+  {{end}}
 {{else}}
   <div class="stat-pill stat-pill--empty">
     <div class="stat-pill__label">Obiettivo</div>

@@ -3,7 +3,10 @@
   {{ range .Rows }}
   <div class="swipe-row">
     <div class="swipe-row__content row">
-      <div>{{ .Date }}</div>
+      <div>
+        <span class="row__date">{{ .Date }}</span>
+        <span class="row__time">{{ .Time }}</span>
+      </div>
       <div>{{ if .Notes }}<span class="caption">{{ .Notes }}</span> · {{ end }}{{ .Value }} {{ .Unit }}</div>
     </div>
     <div class="swipe-row__actions">

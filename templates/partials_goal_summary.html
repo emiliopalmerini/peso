@@ -1,5 +1,18 @@
 <div class="list">
   {{if .Active}}
+    {{if .HasProgress}}
+    <div class="progress-section">
+      <div class="progress-bar">
+        <div class="progress-bar__fill {{if .IsOnTrack}}progress-bar__fill--on-track{{else}}progress-bar__fill--behind{{end}}" style="width: {{.ProgressPercent}}%"></div>
+      </div>
+      <div class="progress-meta">
+        <span class="progress-percent">{{.ProgressPercent}}%</span>
+        <span class="progress-status {{if .IsOnTrack}}progress-status--on-track{{else}}progress-status--behind{{end}}">
+          {{if .IsOnTrack}}In linea{{else}}In ritardo{{end}}
+        </span>
+      </div>
+    </div>
+    {{end}}
     <div class="row"><div>Target</div><div>{{.TargetWeight}} {{.Unit}}</div></div>
     <div class="row"><div>Scadenza</div><div>{{.TargetDate}}</div></div>
     {{if .HasProgress}}

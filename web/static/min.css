@@ -523,6 +523,10 @@ a:hover { opacity: 0.7; }
   color: var(--color-text-tertiary);
 }
 
+.stat-pill--success .stat-pill__value {
+  color: var(--color-success);
+}
+
 /* ==============================================================
    Chart Component
 ============================================================== */
@@ -665,6 +669,16 @@ a:hover { opacity: 0.7; }
   font-variant-numeric: tabular-nums;
 }
 
+.row__date {
+  display: inline;
+}
+
+.row__time {
+  color: var(--color-text-tertiary);
+  margin-left: var(--space-2);
+  font-size: var(--text-xs);
+}
+
 .list .row > div:last-child {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
@@ -710,6 +724,68 @@ a:hover { opacity: 0.7; }
 .swipe-row__action svg {
   width: 18px;
   height: 18px;
+}
+
+/* ==============================================================
+   Progress Bar
+============================================================== */
+.progress-section {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.progress-bar__fill--on-track {
+  background: var(--color-success);
+}
+
+.progress-bar__fill--behind {
+  background: var(--color-error);
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
+.progress-percent {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.progress-status {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.progress-status--on-track {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.progress-status--behind {
+  color: var(--color-error);
+  background: var(--color-error-bg);
 }
 
 /* ==============================================================
@@ -1233,7 +1309,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 
 /* Skeleton */
 .skeleton {
-  background: linear-gradient(90deg, var(--ink-05) 25%, var(--ink-10) 50%, var(--ink-05) 75%);
+  background: linear-gradient(90deg, var(--color-border-subtle) 25%, var(--color-border) 50%, var(--color-border-subtle) 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;
   border-radius: var(--radius-sm);
@@ -1399,6 +1475,10 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     background: var(--ink-80);
   }
 
+  .period-chip--active {
+    background: var(--ink-70);
+  }
+
   .numpad__key {
     background: var(--ink-70);
   }
@@ -1417,6 +1497,56 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 
   select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  }
+
+  /* Swipe row in dark mode */
+  .swipe-row__content {
+    background: var(--color-bg);
+  }
+
+  /* Progress bar background in dark mode */
+  .progress-bar {
+    background: var(--ink-70);
+  }
+
+  /* FAB in dark mode */
+  .fab {
+    background: var(--ink-05);
+    color: var(--ink-90);
+  }
+
+  /* Bottom sheet in dark mode */
+  .bottom-sheet {
+    box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .bottom-sheet__handle {
+    background: var(--ink-60);
+  }
+
+  /* Toast in dark mode */
+  .toast {
+    background: var(--ink-05);
+    color: var(--ink-90);
+  }
+
+  .toast--success {
+    background: var(--color-success);
+    color: var(--ink-00);
+  }
+
+  .toast--error {
+    background: var(--color-error);
+    color: var(--ink-00);
+  }
+
+  /* Pull indicator in dark mode */
+  .pull-indicator {
+    background: var(--ink-70);
+  }
+
+  .pull-indicator__icon {
+    stroke: var(--ink-05);
   }
 
   * {

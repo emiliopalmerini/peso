@@ -326,7 +326,7 @@ func (h *Handlers) GoalFormHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}{
 		UserID: userIDStr,
-		Today:  time.Now().Format("02/01/2006"),
+		Today:  time.Now().Format("2006-01-02"),
 		CurrentWeight: func() *struct {
 			Value float64
 			Unit  string
@@ -431,6 +431,7 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 		ID     string
 		UserID string
 		Date   string
+		Time   string
 		Value  string
 		Unit   string
 		Notes  string
@@ -441,6 +442,7 @@ func (h *Handlers) RecentWeightsHandler(w http.ResponseWriter, r *http.Request) 
 			ID:     wgt.ID().String(),
 			UserID: userIDStr,
 			Date:   wgt.MeasuredAt().Format("02/01/2006"),
+			Time:   wgt.MeasuredAt().Format("15:04"),
 			Value:  fmt.Sprintf("%.1f", wgt.Value().Float64()),
 			Unit:   wgt.Unit().String(),
 			Notes:  wgt.Notes(),
@@ -516,15 +518,17 @@ func (h *Handlers) GoalSummaryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type vm struct {
-		UserID        string
-		Active        bool
-		TargetWeight  string
-		Unit          string
-		TargetDate    string
-		HasProgress   bool
-		WeightToLose  string
-		DaysRemaining int
-		HasWeights    bool
+		UserID          string
+		Active          bool
+		TargetWeight    string
+		Unit            string
+		TargetDate      string
+		HasProgress     bool
+		WeightToLose    string
+		DaysRemaining   int
+		HasWeights      bool
+		ProgressPercent int
+		IsOnTrack       bool
 	}
 
 	out := vm{UserID: userIDStr, HasWeights: hasWeights}
@@ -537,6 +541,14 @@ func (h *Handlers) GoalSummaryHandler(w http.ResponseWriter, r *http.Request) {
 			out.HasProgress = true
 			out.WeightToLose = fmt.Sprintf("%.1f", p.WeightToLose.Float64())
 			out.DaysRemaining = p.DaysRemaining
+			out.ProgressPercent = int(p.ProgressPercent)
+			if out.ProgressPercent > 100 {
+				out.ProgressPercent = 100
+			}
+			if out.ProgressPercent < 0 {
+				out.ProgressPercent = 0
+			}
+			out.IsOnTrack = p.IsOnTrack
 		}
 	}
 
@@ -636,18 +648,41 @@ func (h *Handlers) StatPillsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type vm struct {
-		GoalWeight string
-		GoalUnit   string
-		HasGoal    bool
+		GoalWeight   string
+		GoalUnit     string
+		HasGoal      bool
+		Remaining    string
+		HasRemaining bool
+		GoalReached  bool
 	}
 
 	out := vm{}
+
+	// Get latest weight for calculations
+	latest, _ := h.weightTracker.GetLatestWeight(userID)
 
 	// Get goal info
 	if g, _ := h.goalTracker.GetActiveGoal(userID); g != nil {
 		out.HasGoal = true
 		out.GoalWeight = fmt.Sprintf("%.1f", g.TargetWeight().Float64())
 		out.GoalUnit = g.Unit().String()
+
+		// Calculate remaining to goal
+		if latest != nil {
+			remaining := latest.Value().Float64() - g.TargetWeight().Float64()
+			// Goal reached if within 0.1 kg of target
+			if remaining <= 0.1 && remaining >= -0.1 {
+				out.GoalReached = true
+			} else {
+				out.HasRemaining = true
+				// Show absolute value
+				if remaining > 0 {
+					out.Remaining = fmt.Sprintf("%.1f", remaining)
+				} else {
+					out.Remaining = fmt.Sprintf("%.1f", -remaining)
+				}
+			}
+		}
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "partials_stat_pills.html", out); err != nil {
