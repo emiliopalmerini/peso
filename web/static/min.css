@@ -1383,6 +1383,34 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
     background: rgba(17, 17, 17, 0.85);
   }
 
+  .stat-hero__btn:hover {
+    background: var(--ink-70);
+  }
+
+  .stat-hero__btn:active {
+    background: var(--ink-60);
+  }
+
+  .stat-hero__trend--neutral {
+    background: var(--ink-70);
+  }
+
+  .period-chips {
+    background: var(--ink-80);
+  }
+
+  .numpad__key {
+    background: var(--ink-70);
+  }
+
+  .numpad__key:hover {
+    background: var(--ink-60);
+  }
+
+  .numpad__key:active {
+    background: var(--ink-50);
+  }
+
   input:focus, select:focus, textarea:focus {
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
   }
