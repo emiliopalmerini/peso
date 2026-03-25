@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -629,42 +630,40 @@ func (h *Handlers) StatHeroHandler(w http.ResponseWriter, r *http.Request) {
 
 	out := vm{}
 
-	latest, err := h.weightTracker.GetLatestWeight(userID)
-	if err == nil && latest != nil {
+	recent, _ := h.weightTracker.GetRecentWeights(userID, 2)
+	if len(recent) >= 1 {
+		latest := recent[0]
 		out.HasData = true
 		out.CurrentWeight = fmt.Sprintf("%.1f", latest.Value().Float64())
 		out.Unit = latest.Unit().String()
 		out.LastDate = latest.MeasuredAt().Format("02/01")
 		out.LastTime = latest.MeasuredAt().Format("15:04")
 
-		// Determine goal direction: gaining weight means "up" is good
-		gainGoal := false
-		if g, _ := h.goalTracker.GetActiveGoal(userID); g != nil {
-			gainGoal = g.TargetWeight().Float64() > latest.Value().Float64()
-		}
+		if len(recent) >= 2 {
+			current := latest.Value().Float64()
+			previous := recent[1].Value().Float64()
+			diff := current - previous
 
-		// Calculate 7-day trend
-		weights, _ := h.weightTracker.GetWeightHistory(userID, application.TimePeriodLastWeek)
-		if len(weights) >= 2 {
-			oldest := weights[len(weights)-1].Value().Float64()
-			newest := weights[0].Value().Float64()
-			diff := newest - oldest
-
-			// CSS: --down = green (success), --up = red (error)
-			// For gain goals, invert: weight going up is good
-			if diff < -0.1 {
-				out.TrendValue = fmt.Sprintf("%.1f", diff)
-				if gainGoal {
-					out.TrendClass = "stat-hero__trend--up"
+			if diff < -0.1 || diff > 0.1 {
+				if diff > 0 {
+					out.TrendValue = fmt.Sprintf("+%.1f", diff)
 				} else {
-					out.TrendClass = "stat-hero__trend--down"
+					out.TrendValue = fmt.Sprintf("%.1f", diff)
 				}
-			} else if diff > 0.1 {
-				out.TrendValue = fmt.Sprintf("+%.1f", diff)
-				if gainGoal {
-					out.TrendClass = "stat-hero__trend--down"
+
+				// Green if closer to goal, red if further away
+				goal, _ := h.goalTracker.GetActiveGoal(userID)
+				if goal != nil {
+					target := goal.TargetWeight().Float64()
+					prevDistance := math.Abs(previous - target)
+					currDistance := math.Abs(current - target)
+					if currDistance < prevDistance {
+						out.TrendClass = "stat-hero__trend--down" // green
+					} else {
+						out.TrendClass = "stat-hero__trend--up" // red
+					}
 				} else {
-					out.TrendClass = "stat-hero__trend--up"
+					out.TrendClass = "stat-hero__trend--neutral"
 				}
 			} else {
 				out.TrendValue = "0.0"
