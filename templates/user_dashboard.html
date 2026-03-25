@@ -48,6 +48,18 @@
             </div>
         </section>
 
+        <!-- Goal Summary -->
+        <section class="page__section">
+            <details>
+                <summary>Obiettivo</summary>
+                <div class="details-content" id="goal-summary"
+                     hx-get="/users/{{.UserID}}/goal-summary"
+                     hx-trigger="load, weight-updated from:body, goal-updated from:body">
+                    <div class="text-muted">Caricamento...</div>
+                </div>
+            </details>
+        </section>
+
         <!-- Goal panel -->
         <section class="page__section"><div id="panel"></div></section>
 
@@ -88,17 +100,6 @@
             </div>
         </section>
 
-        <!-- Goal Summary -->
-        <section class="page__section">
-            <details>
-                <summary>Obiettivo</summary>
-                <div class="details-content" id="goal-summary"
-                     hx-get="/users/{{.UserID}}/goal-summary"
-                     hx-trigger="load, weight-updated from:body, goal-updated from:body">
-                    <div class="text-muted">Caricamento...</div>
-                </div>
-            </details>
-        </section>
     </main>
 
     <!-- Toast Container -->
