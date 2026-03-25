@@ -637,18 +637,35 @@ func (h *Handlers) StatHeroHandler(w http.ResponseWriter, r *http.Request) {
 		out.LastDate = latest.MeasuredAt().Format("02/01")
 		out.LastTime = latest.MeasuredAt().Format("15:04")
 
+		// Determine goal direction: gaining weight means "up" is good
+		gainGoal := false
+		if g, _ := h.goalTracker.GetActiveGoal(userID); g != nil {
+			gainGoal = g.TargetWeight().Float64() > latest.Value().Float64()
+		}
+
 		// Calculate 7-day trend
 		weights, _ := h.weightTracker.GetWeightHistory(userID, application.TimePeriodLastWeek)
 		if len(weights) >= 2 {
 			oldest := weights[len(weights)-1].Value().Float64()
 			newest := weights[0].Value().Float64()
 			diff := newest - oldest
+
+			// CSS: --down = green (success), --up = red (error)
+			// For gain goals, invert: weight going up is good
 			if diff < -0.1 {
 				out.TrendValue = fmt.Sprintf("%.1f", diff)
-				out.TrendClass = "stat-hero__trend--down"
+				if gainGoal {
+					out.TrendClass = "stat-hero__trend--up"
+				} else {
+					out.TrendClass = "stat-hero__trend--down"
+				}
 			} else if diff > 0.1 {
 				out.TrendValue = fmt.Sprintf("+%.1f", diff)
-				out.TrendClass = "stat-hero__trend--up"
+				if gainGoal {
+					out.TrendClass = "stat-hero__trend--down"
+				} else {
+					out.TrendClass = "stat-hero__trend--up"
+				}
 			} else {
 				out.TrendValue = "0.0"
 				out.TrendClass = "stat-hero__trend--neutral"
