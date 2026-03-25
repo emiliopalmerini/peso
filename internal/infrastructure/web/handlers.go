@@ -317,12 +317,35 @@ func (h *Handlers) GoalFormHandler(w http.ResponseWriter, r *http.Request) {
 		current.Unit = latest.Unit().String()
 	}
 
+	// Check for active goal to pre-fill form
+	var activeGoal *struct {
+		TargetWeight string
+		TargetDate   string
+		Notes        string
+	}
+	if g, _ := h.goalTracker.GetActiveGoal(userID); g != nil {
+		activeGoal = &struct {
+			TargetWeight string
+			TargetDate   string
+			Notes        string
+		}{
+			TargetWeight: fmt.Sprintf("%.1f", g.TargetWeight().Float64()),
+			TargetDate:   g.TargetDate().ToTime().Format("2006-01-02"),
+			Notes:        g.Description(),
+		}
+	}
+
 	data := struct {
 		UserID        string
 		Today         string
 		CurrentWeight *struct {
 			Value float64
 			Unit  string
+		}
+		ActiveGoal *struct {
+			TargetWeight string
+			TargetDate   string
+			Notes        string
 		}
 	}{
 		UserID: userIDStr,
@@ -336,6 +359,7 @@ func (h *Handlers) GoalFormHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return nil
 		}(),
+		ActiveGoal: activeGoal,
 	}
 
 	if err := h.templates.ExecuteTemplate(w, "goal_form.html", data); err != nil {

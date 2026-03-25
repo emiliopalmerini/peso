@@ -77,10 +77,13 @@ func (gt *GoalTracker) SetGoal(userID user.UserID, targetWeight weight.WeightVal
 		return nil, ErrSameWeight
 	}
 
-	// Check if user already has an active goal
+	// Deactivate existing active goal if present
 	existingGoal, err := gt.goalRepo.FindActiveByUserID(userID)
 	if err == nil && existingGoal != nil {
-		return nil, ErrActiveGoalExists
+		existingGoal.Deactivate()
+		if err := gt.goalRepo.Save(existingGoal); err != nil {
+			return nil, fmt.Errorf("failed to deactivate existing goal: %w", err)
+		}
 	}
 
 	// Validate goal is realistic (max 2kg per week)

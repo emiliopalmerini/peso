@@ -146,15 +146,14 @@ func TestGoalTracker_SetGoal(t *testing.T) {
 			errorMsg:    "target weight must be different from current weight",
 		},
 		{
-			name: "already has active goal",
+			name: "replaces existing active goal",
 			setupMocks: func() {
 				existingGoal, _ := goal.NewGoal("g1", userID, targetWeight, unit, targetDate, "existing")
 				mockUserRepo.data["FindByIDResult"] = testUser
 				mockWeightRepo.data["FindLatestByUserIDResult"] = currentWeight
 				mockGoalRepo.data["FindActiveByUserIDResult"] = existingGoal
 			},
-			expectedErr: true,
-			errorMsg:    "user already has an active goal",
+			expectedErr: false,
 		},
 	}
 

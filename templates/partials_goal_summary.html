@@ -19,6 +19,12 @@
       <div class="row"><div>Da perdere/guadagnare</div><div>{{.WeightToLose}} kg</div></div>
       <div class="row"><div>Giorni rimanenti</div><div>{{.DaysRemaining}}</div></div>
     {{end}}
+    <div class="actions" style="margin-top: var(--space-3);">
+      <button class="btn btn-secondary btn--block"
+              hx-get="/users/{{.UserID}}/goal-form"
+              hx-target="#panel"
+              hx-swap="innerHTML">Modifica Obiettivo</button>
+    </div>
   {{else}}
     <div class="row"><div class="caption">Nessun obiettivo attivo</div></div>
     {{if .HasWeights}}

@@ -1,5 +1,5 @@
 <div class="goal-form-container">
-    <h2 class="goal-form__title">Imposta obiettivo</h2>
+    <h2 class="goal-form__title">{{if .ActiveGoal}}Modifica obiettivo{{else}}Imposta obiettivo{{end}}</h2>
     <form class="goal-form" hx-post="/api/goals" hx-indicator=".indicator" hx-on="htmx:afterRequest: if(event.detail.successful) window.location.reload()">
         <input type="hidden" name="user_id" value="{{.UserID}}">
 
@@ -15,7 +15,7 @@
 
         <div class="field">
             <label for="target-weight">Peso target (kg)</label>
-            <input type="number" id="target-weight" name="target_weight" step="0.1" min="10" max="500" required placeholder="70.0" inputmode="decimal">
+            <input type="number" id="target-weight" name="target_weight" step="0.1" min="10" max="500" required placeholder="70.0" inputmode="decimal" {{if .ActiveGoal}}value="{{.ActiveGoal.TargetWeight}}"{{end}}>
             {{if .CurrentWeight}}
             <span class="caption">Peso attuale: {{.CurrentWeight.Value}} kg</span>
             {{end}}
@@ -23,12 +23,12 @@
 
         <div class="field">
             <label for="target-date">Data target</label>
-            <input type="date" id="target-date" name="target_date" min="{{.Today}}" required>
+            <input type="date" id="target-date" name="target_date" min="{{.Today}}" required {{if .ActiveGoal}}value="{{.ActiveGoal.TargetDate}}"{{end}}>
         </div>
 
         <div class="field">
             <label for="goal-notes">Note (opzionale)</label>
-            <input type="text" id="goal-notes" name="notes" maxlength="200" placeholder="Motivazione o dettagli">
+            <input type="text" id="goal-notes" name="notes" maxlength="200" placeholder="Motivazione o dettagli" {{if .ActiveGoal}}value="{{.ActiveGoal.Notes}}"{{end}}>
         </div>
 
         <div class="actions">
